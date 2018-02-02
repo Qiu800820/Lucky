@@ -9,32 +9,46 @@ from db.ssc_dao import AnswerObject
 
 class Fetch:
 	def __init__(self):
-		self.url = 'http://caipiao.163.com/t/awardlist.html'
 		self.answer_db = AnswerObject()
-		self.has_change = True
+		self.has_change = False
+		self.url = 'http://caipiao.163.com/award/cqssc/%s.html'
 
 	# 刷新历史开奖数据
 	# last_no ：本地最新开奖期
 	def refresh_answer(self, last_no):
-		page_no = 1
-		data_list = self.query_answer(no=page_no)
-		for data in data_list:
-			if int(data['period']) > int(last_no):
-				self.answer_db.insert(data['period'], data['number'], data['period'][-3:])
-		if self.has_change:
-			self.answer_db.commit()
+		day_list = time_difference(last_no)
+		for day in day_list:
+			data_list = self.__query_answer(day=day)
+			for data in data_list:
+				if data and data['no'] and int(data['no']) > int(last_no):  # 排除未开奖结果
+					self.answer_db.replace(data['no'], data['number'], data['day_no'])
+					print(data)
+					self.has_change = True
+			if self.has_change:
+				self.answer_db.commit()
+				self.has_change = False
 
-	def query_answer(self, no):
-		params = {'gameEn': 'ssc', 'pageNums': '30', 'pageNo': no, 'cache': int(time.time() * 1000)}
-		response = requests.get(self.url, params)
-		data_list = response.json()['list']
-		return data_list
+	#  加载某一天开奖结果
+	def __query_answer(self, day):
+		print('加载%s内容' % day)
+		response = requests.get(self.url % day)
+		response = etree.HTML(response.text)
+		td_list = response.xpath("//table/tr/td[contains(@class, 'start')]")
+		for td in td_list:
+			number = td.xpath("@data-win-number")
+			if number and len(number) > 0:
+				yield {'number': number[0], 'no': td.xpath("@data-period")[0], 'day_no': td.xpath("text()")[0]}
 
 
+# 计算需要加载的
 def time_difference(no):
 	if len(no) > 6:
 		no = no[0:6]
 	second = int(time.mktime(time.strptime(no, '%y%m%d')))
-	print('本地最新开奖结果时间：%s, millisecond: %s' % (no, second))
+	current_second = int(time.time())
+	print('本地最新开奖结果时间：%s, second: %s' % (no, second))
+	while second < current_second:
+		day_str = time.strftime('%Y%m%d', time.localtime(second))
+		yield day_str
+		second += 86400
 
-time_difference('180201001')

@@ -5,6 +5,7 @@ queries = {
 	'SELECT_ALL': 'SELECT %s FROM %s ',
 	'INSERT': 'INSERT INTO %s VALUES(%s)',
 	'UPDATE': 'UPDATE %s SET %s WHERE %s',
+	'REPLACE': 'REPLACE INTO %s VALUES(%s)',
 	'DELETE': 'DELETE FROM %s where %s',
 	'DELETE_ALL': 'DELETE FROM %s',
 	'CREATE_TABLE': 'CREATE TABLE IF NOT EXISTS %s(%s)',
@@ -64,6 +65,11 @@ class DatabaseObject(object):
 		query = queries['INSERT'] % (table_name, values)
 		return self.write(query, args)
 
+	def replace(self, table_name, *args):
+		values = ','.join(['?' for l in args])
+		query = queries['REPLACE'] % (table_name, values)
+		return self.write(query, args)
+
 	def update(self, table_name, set_args, **kwargs):
 		updates = ','.join(['%s=?' % k for k in set_args])
 		conds = ' and '.join(['%s like ?' % k for k in kwargs])
@@ -117,6 +123,9 @@ class Table(DatabaseObject):
 
 	def delete_all(self):
 		return super(Table, self).delete_all(self.table_name)
+
+	def replace(self, *args):
+		return super(Table, self).replace(self.table_name, *args)
 
 	def drop(self):
 		return super(Table, self).drop_table(self.table_name)
