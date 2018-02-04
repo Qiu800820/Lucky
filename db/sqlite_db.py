@@ -48,7 +48,7 @@ class DatabaseObject(object):
 		subs = [kwargs[k] for k in kwargs]
 		query = queries['SELECT'] % (vals, locs, conds)
 		if order_by:
-			query += " ORDER BY %s DESC" % order_by
+			query += " ORDER BY %s " % order_by
 
 		return self.read(query, subs)
 
@@ -57,7 +57,7 @@ class DatabaseObject(object):
 		locs = ','.join(tables)
 		query = queries['SELECT_ALL'] % (vals, locs)
 		if order_by:
-			query += " ORDER BY %s DESC"
+			query += " ORDER BY %s " % order_by
 		return self.read(query)
 
 	def insert(self, table_name, *args):
@@ -121,14 +121,14 @@ class Table(DatabaseObject):
 	def delete(self, **kwargs):
 		return super(Table, self).delete(self.table_name, **kwargs)
 
+	def drop(self):
+		return super(Table, self).drop_table(self.table_name)
+
 	def delete_all(self):
 		return super(Table, self).delete_all(self.table_name)
 
 	def replace(self, *args):
 		return super(Table, self).replace(self.table_name, *args)
-
-	def drop(self):
-		return super(Table, self).drop_table(self.table_name)
 
 	def commit(self):
 		return super(Table, self).commit()

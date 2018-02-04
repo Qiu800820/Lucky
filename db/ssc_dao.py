@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+import json
 import os
 
 from db import sqlite_db
@@ -7,7 +8,7 @@ from db import sqlite_db
 
 class AnswerObject(sqlite_db.Table):
 	def __init__(self):
-		super(AnswerObject, self).__init__("../resouce/ssc.db", "answer", ['no TEXT PRIMARY KEY', 'number TEXT', 'day_no TEXT'])
+		super(AnswerObject, self).__init__("./resouce/ssc.db", "answer", ['no TEXT PRIMARY KEY', 'number TEXT', 'day_no TEXT'])
 
 	def insert(self, *args):
 		self.free(super(AnswerObject, self).insert(*args))
@@ -27,21 +28,40 @@ class AnswerObject(sqlite_db.Table):
 	def replace(self, *args):
 		self.free(super(AnswerObject, self).replace(*args))
 
+	# 获取本地最新开奖记录
 	def get_last_answer(self):
-		cursor = self.select('*', order_by='no')
+		cursor = self.select_all('*', order_by='no DESC')
 		last_answer = cursor.fetchone()
 		while last_answer:
-			if last_answer['number']:
-				return last_answer
+			if last_answer[1]:  # 过滤空数据(未开奖)
+				break
 			else:
 				last_answer = cursor.fetchone()
-		print('error : 本地服务中没有开奖记录， 请检查路径：%s 是否存在' % os.path.abspath("../resouce/ssc.db"))
-		return None
+		self.free(cursor)
+		if not last_answer:
+			print('error : 本地服务中没有开奖记录， 请检查路径：%s 是否存在' % os.path.abspath("./resouce/ssc.db"))
+		return {'no': last_answer[0], 'number': last_answer[1], 'day_no': last_answer[2]}
+
+	# 获取本地某期后的开奖记录
+	def get_new_answer(self, no):
+		cursor = self.read('select * from answer where no > ? order by no asc', [no])
+		answer = cursor.fetchone()
+		while answer:
+			yield {'no': answer[0], 'number': answer[1], 'day_no': answer[2]}
+			answer = cursor.fetchone()
+		self.free(cursor)
+
+	def diff_no(self, last_no, current_no):
+		cursor = self.read("select count(*) as count from answer where no > ? and no < ? and number <> ''", [last_no, current_no])
+		diff_no = cursor.fetchone()
+		self.free(cursor)
+		return diff_no[0]
 
 
 class TwoStarObject(sqlite_db.Table):
 	def __init__(self):
-		super(TwoStarObject, self).__init__("../resouce/ssc.db", "two_star", ["id TEXT PRIMARY KEY", "history_omit_number TEXT", "current_omit_number NUMERIC", "last_no TEXT"])
+		super(TwoStarObject, self).__init__("./resouce/ssc.db", "TwoStar",
+		                                    ["id TEXT PRIMARY KEY", "history_omit_number TEXT", "max_omit_number NUMERIC", "last_no TEXT"])
 
 	def insert(self, *args):
 		self.free(super(TwoStarObject, self).insert(*args))
@@ -61,4 +81,41 @@ class TwoStarObject(sqlite_db.Table):
 	def replace(self, *args):
 		self.free(super(TwoStarObject, self).replace(*args))
 
+	def get_all(self):
+		cursor = self.select_all('*', order_by=None)
+		two_star = cursor.fetchone()
+		while two_star:
+			yield {'id': two_star[0], 'history_omit_number': two_star[1], 'max_omit_number': two_star[2], 'last_no': two_star[3]}
+			two_star = cursor.fetchone()
+		self.free(cursor)
+
+	def get_one_by_id(self, id):
+		cursor = self.select('*', order_by=None, id=id)
+		two_star = cursor.fetchone()
+		self.free(cursor)
+		if two_star:
+			two_star = {'id': two_star[0], 'history_omit_number': two_star[1], 'max_omit_number': two_star[2], 'last_no': two_star[3]}
+		return two_star
+
+
+class Config:
+
+	def __init__(self):
+		self.path = './resouce/config.json'
+
+	def read(self, key: str):
+		file = open(self.path)
+		json_obj = json.load(file)
+		file.close()
+		return json_obj[key]
+
+	def write(self, key: str, value):
+		file = open(self.path)
+		json_obj = json.load(file)
+		file.close()
+
+		file = open(self.path, 'w')
+		json_obj[key] = value
+		json.dump(json_obj, file)
+		file.close()
 
