@@ -43,8 +43,8 @@ class AnswerObject(sqlite_db.Table):
 		return {'no': last_answer[0], 'number': last_answer[1], 'day_no': last_answer[2]}
 
 	# 获取本地某期后的开奖记录
-	def get_new_answer(self, no):
-		cursor = self.read('select * from answer where no > ? order by no asc', [no])
+	def get_new_answer(self, no, order_by='asc'):
+		cursor = self.read('select * from answer where no > ? order by no %s' % order_by, [no])
 		answer = cursor.fetchone()
 		while answer:
 			yield {'no': answer[0], 'number': answer[1], 'day_no': answer[2]}
@@ -61,7 +61,7 @@ class AnswerObject(sqlite_db.Table):
 class TwoStarObject(sqlite_db.Table):
 	def __init__(self):
 		super(TwoStarObject, self).__init__("./resouce/ssc.db", "TwoStar",
-		                                    ["id TEXT PRIMARY KEY", "history_omit_number TEXT", "max_omit_number NUMERIC", "last_no TEXT"])
+		                                    ["id TEXT PRIMARY KEY", "max_omit_number NUMERIC", "last_no TEXT"])
 
 	def insert(self, *args):
 		self.free(super(TwoStarObject, self).insert(*args))
@@ -85,7 +85,7 @@ class TwoStarObject(sqlite_db.Table):
 		cursor = self.select_all('*', order_by=None)
 		two_star = cursor.fetchone()
 		while two_star:
-			yield {'id': two_star[0], 'history_omit_number': two_star[1], 'max_omit_number': two_star[2], 'last_no': two_star[3]}
+			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
 			two_star = cursor.fetchone()
 		self.free(cursor)
 
@@ -94,9 +94,8 @@ class TwoStarObject(sqlite_db.Table):
 		two_star = cursor.fetchone()
 		self.free(cursor)
 		if two_star:
-			two_star = {'id': two_star[0], 'history_omit_number': two_star[1], 'max_omit_number': two_star[2], 'last_no': two_star[3]}
+			two_star = {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
 		return two_star
-
 
 class Config:
 

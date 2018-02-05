@@ -22,7 +22,6 @@ class DatabaseObject(object):
 
 	def write(self, query, values=None):
 		cursor = self.db.cursor()
-		print(query, values)
 		if values is not None:
 			cursor.execute(query, list(values))
 		else:
@@ -33,7 +32,6 @@ class DatabaseObject(object):
 		self.db.commit()
 
 	def read(self, query, values=None):
-		print(query, values)
 		cursor = self.db.cursor()
 		if values is not None:
 			cursor.execute(query, list(values))
