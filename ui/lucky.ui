@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>800</width>
-    <height>600</height>
+    <height>800</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -19,7 +19,7 @@
   <property name="maximumSize">
    <size>
     <width>800</width>
-    <height>600</height>
+    <height>800</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -32,7 +32,7 @@
       <x>5</x>
       <y>5</y>
       <width>230</width>
-      <height>590</height>
+      <height>790</height>
      </rect>
     </property>
     <property name="minimumSize">
@@ -44,7 +44,7 @@
     <property name="maximumSize">
      <size>
       <width>230</width>
-      <height>590</height>
+      <height>790</height>
      </size>
     </property>
     <column>
@@ -78,7 +78,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>60</y>
+      <y>260</y>
       <width>531</width>
       <height>31</height>
      </rect>
@@ -104,7 +104,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>100</y>
+      <y>300</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -117,7 +117,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>120</y>
+      <y>320</y>
       <width>531</width>
       <height>211</height>
      </rect>
@@ -134,7 +134,7 @@
     </column>
     <column>
      <property name="text">
-      <string>历史遗漏数</string>
+      <string>平均遗漏数</string>
      </property>
     </column>
     <column>
@@ -152,7 +152,7 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>350</y>
+      <y>550</y>
       <width>511</width>
       <height>23</height>
      </rect>
@@ -165,7 +165,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>390</y>
+      <y>590</y>
       <width>531</width>
       <height>201</height>
      </rect>
@@ -175,20 +175,20 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>20</y>
-      <width>91</width>
+      <y>210</y>
+      <width>51</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>历史最大遗漏数：</string>
+     <string>组合数：</string>
     </property>
    </widget>
    <widget class="QSlider" name="strategySlider">
     <property name="geometry">
      <rect>
-      <x>350</x>
-      <y>20</y>
+      <x>310</x>
+      <y>210</y>
       <width>160</width>
       <height>19</height>
      </rect>
@@ -200,8 +200,8 @@
    <widget class="QLabel" name="strategy_count">
     <property name="geometry">
      <rect>
-      <x>580</x>
-      <y>20</y>
+      <x>540</x>
+      <y>210</y>
       <width>16</width>
       <height>16</height>
      </rect>
@@ -214,7 +214,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>100</y>
+      <y>300</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -227,7 +227,7 @@
     <property name="geometry">
      <rect>
       <x>310</x>
-      <y>100</y>
+      <y>300</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -239,8 +239,8 @@
    <widget class="QLCDNumber" name="lcdNumber">
     <property name="geometry">
      <rect>
-      <x>530</x>
-      <y>20</y>
+      <x>490</x>
+      <y>210</y>
       <width>41</width>
       <height>16</height>
      </rect>
@@ -251,6 +251,174 @@
     <property name="segmentStyle">
      <enum>QLCDNumber::Flat</enum>
     </property>
+   </widget>
+   <widget class="QLabel" name="label_4">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>30</y>
+      <width>54</width>
+      <height>12</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>组合位置：</string>
+    </property>
+   </widget>
+   <widget class="QCheckBox" name="checkBox_11">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>80</y>
+      <width>71</width>
+      <height>16</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>全部</string>
+    </property>
+    <property name="checked">
+     <bool>true</bool>
+    </property>
+   </widget>
+   <widget class="QGroupBox" name="groupBox">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>120</y>
+      <width>481</width>
+      <height>61</height>
+     </rect>
+    </property>
+    <property name="title">
+     <string>遗漏数</string>
+    </property>
+    <widget class="QRadioButton" name="radioButton">
+     <property name="geometry">
+      <rect>
+       <x>30</x>
+       <y>30</y>
+       <width>111</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>历史最大遗漏数</string>
+     </property>
+     <property name="checked">
+      <bool>true</bool>
+     </property>
+    </widget>
+    <widget class="QRadioButton" name="radioButton_2">
+     <property name="geometry">
+      <rect>
+       <x>170</x>
+       <y>30</y>
+       <width>111</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>历史平均遗漏数</string>
+     </property>
+     <property name="checked">
+      <bool>false</bool>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>20</y>
+      <width>381</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <item>
+      <widget class="QCheckBox" name="checkBox">
+       <property name="text">
+        <string>12XXX</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_2">
+       <property name="text">
+        <string>1X3XX</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_3">
+       <property name="text">
+        <string>1XX4X</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_4">
+       <property name="text">
+        <string>1XXX5</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_5">
+       <property name="text">
+        <string>X23XX</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+   <widget class="QWidget" name="">
+    <property name="geometry">
+     <rect>
+      <x>330</x>
+      <y>50</y>
+      <width>381</width>
+      <height>18</height>
+     </rect>
+    </property>
+    <layout class="QHBoxLayout" name="horizontalLayout_3">
+     <item>
+      <widget class="QCheckBox" name="checkBox_6">
+       <property name="text">
+        <string>X2X4X</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_7">
+       <property name="text">
+        <string>X2XX5</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_8">
+       <property name="text">
+        <string>XX34X</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_9">
+       <property name="text">
+        <string>XX3X5</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="checkBox_10">
+       <property name="text">
+        <string>XXX45</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
  </widget>

@@ -3,7 +3,7 @@
 import time
 
 from core.fetch import Fetch
-from db.ssc_dao import AnswerObject, TwoStarObject, Config
+from db.ssc_dao import AnswerObject, TwoStarObject, Config, OmitLogObject
 
 
 class Core:
@@ -11,6 +11,7 @@ class Core:
 		self.fetch = Fetch()
 		self.answer = AnswerObject()
 		self.two_star = TwoStarObject()
+		self.omit_log = OmitLogObject()
 		self.config = Config()
 		self.index = [[0, 1], [0, 2], [0, 3], [0, 4], [1, 2], [1, 3], [1, 4], [2, 3], [2, 4], [3, 4]]
 		print('init done')
@@ -39,7 +40,8 @@ class Core:
 				answer_number = answer['number'].replace(' ', '')
 				self.update_two_star(answer_no, answer_number)
 				last_answer_no = answer_no
-			self.two_star.commit()
+			self.omit_log.commit_cache()
+			self.two_star.commit_cache()
 			if last_answer_no:
 				self.config.write('last_statistics_no', last_answer_no)
 
@@ -47,19 +49,23 @@ class Core:
 	def update_two_star(self, answer_no, answer_number):
 		if len(answer_number) < 5:
 			return
-
 		for index in self.index:
 			number_format = "XXXXX"
 			two_star_id = number_format[:index[0]] + answer_number[index[0]] + number_format[index[0] + 1:index[1]] + \
 			              answer_number[index[1]] + number_format[index[1] + 1:]  # 得到two_star id
-			two_star = self.two_star.get_one_by_id(two_star_id)  # 根据ID 取出本地双星数据
+			two_star = self.two_star.get_one_by_id_cache(two_star_id)  # 根据ID 取出本地双星数据
 			if two_star:
 				omit_number = self.answer.diff_no(two_star['last_no'], answer_no)  # 算出遗漏期数
 				two_star['max_omit_number'] = max(two_star['max_omit_number'], omit_number)  # 计算最大遗漏期数
 				two_star['last_no'] = answer_no
-				self.two_star.update(two_star, id=two_star_id)  # 更新双星数据
+				self.add_omit_log(two_star_id, omit_number)
+				self.two_star.update_cache(two_star['id'], two_star)  # 更新双星数据
 			else:
-				self.two_star.insert(two_star_id, 0, answer_no)  # 本地无该数据  直接插入
+				self.two_star.update_cache(two_star_id, {'id': two_star_id, 'max_omit_number': 0, 'last_no': answer_no})  # 本地无该数据  直接插入
+
+	def add_omit_log(self, no, omit_number):
+		if omit_number > 0:
+			self.omit_log.insert_cache({'no': no, 'omit_number': omit_number})
 
 	def get_two_star_by_strategy(self, omit_percent=None, sort_percent=None):
 
@@ -78,7 +84,7 @@ class Core:
 		if omit_percent:
 			return self.get_two_star_by_omit(two_star_list, omit_percent)
 		else:
-			return self.get_two_star_by_omit(two_star_list, sort_percent)
+			return self.get_two_star_by_sort(two_star_list, sort_percent)
 
 	def get_two_star_by_omit(self, two_star_list, percent):
 		new_two_star_list = []

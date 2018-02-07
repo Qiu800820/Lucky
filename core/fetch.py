@@ -53,4 +53,3 @@ def time_difference(no):
 		day_str = time.strftime('%Y%m%d', time.localtime(second))
 		yield day_str
 		second += 86400
-

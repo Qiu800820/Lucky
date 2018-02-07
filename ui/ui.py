@@ -32,7 +32,7 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 			self.show_answer()
 		except Exception as e:
 			self.show_toast(message=e)
-			traceback.print_exc(file=open('log.txt', 'w+'))
+			traceback.print_exc(file=open('log.txt', 'a+'))
 		finally:
 			button_status_chang(self.refresh, disabled=False)
 
@@ -41,13 +41,17 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		percent = self.lcdNumber.value() / 100
 		button_status_chang(self.statistics, disabled=True)  # 按钮防抖
 		try:
-			self.core.statistics()
+			self.get_strategy()
 			self.show_two_star_result(percent)
 		except Exception as e:
 			self.show_toast(message=e)
 			traceback.print_exc(file=open('log.txt', 'a+'))
 		finally:
 			button_status_chang(self.statistics, disabled=False)
+
+	def get_strategy(self):
+		# todo
+		return {}
 
 	def show_toast(self, message):
 		QMessageBox.information(self, "Lucky", str(message), QMessageBox.Yes)
@@ -56,9 +60,9 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		super(UI, self).show()
 		self.show_answer()
 
-	def show_two_star_result(self, percent):
+	def show_two_star_result(self, strategy):
 		self.result_table.clearContents()
-		self.two_star_list = self.core.get_two_star_by_strategy(omit_percent=percent)
+		self.two_star_list = self.core.get_two_star_by_strategy(strategy)
 
 		row = 0
 		size = len(self.two_star_list)
@@ -67,6 +71,7 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		for two_star in self.two_star_list:
 			self.result_table.setItem(row, 0, QtWidgets.QTableWidgetItem(two_star['id']))
 			self.result_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(two_star['weight'])))
+			self.result_table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(two_star['avg_omit_number'])))
 			self.result_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(two_star['max_omit_number'])))
 			self.result_table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(two_star['current_omit_number'])))
 			row += 1

@@ -62,12 +62,16 @@ class TwoStarObject(sqlite_db.Table):
 	def __init__(self):
 		super(TwoStarObject, self).__init__("./resouce/ssc.db", "TwoStar",
 		                                    ["id TEXT PRIMARY KEY", "max_omit_number NUMERIC", "last_no TEXT"])
+		self.cache = {}
 
 	def insert(self, *args):
 		self.free(super(TwoStarObject, self).insert(*args))
 
 	def update(self, set_args, **kwargs):
 		self.free(super(TwoStarObject, self).update(set_args, **kwargs))
+
+	def update_cache(self, id, two_star):
+		self.cache.setdefault(id, two_star)
 
 	def delete(self, **kwargs):
 		self.free(super(TwoStarObject, self).delete(**kwargs))
@@ -97,6 +101,61 @@ class TwoStarObject(sqlite_db.Table):
 			two_star = {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
 		return two_star
 
+	def get_one_by_id_cache(self, id):
+		two_star = self.cache.get(id)
+		if not two_star:
+			two_star = self.get_one_by_id(id)
+		if two_star:
+			self.update_cache(id, two_star)
+		return two_star
+
+	def commit_cache(self):
+		for value in self.cache.values():
+			self.replace(value['id'], value['max_omit_number'], value['last_no'])
+		self.commit()
+
+
+class OmitLogObject(sqlite_db.Table):
+	def __init__(self):
+		super(OmitLogObject, self).__init__("./resouce/ssc.db", "OmitLog",
+		                                    ["no TEXT", "omit_number NUMERIC"])
+		self.cache = []
+
+	def insert(self, *args):
+		self.free(super(OmitLogObject, self).insert(*args))
+
+	def update(self, set_args, **kwargs):
+		self.free(super(OmitLogObject, self).update(set_args, **kwargs))
+
+	def delete(self, **kwargs):
+		self.free(super(OmitLogObject, self).delete(**kwargs))
+
+	def delete_all(self, **kwargs):
+		self.free(super(OmitLogObject, self).delete_all())
+
+	def drop(self):
+		self.free(super(OmitLogObject, self).drop())
+
+	def replace(self, *args):
+		self.free(super(OmitLogObject, self).replace(*args))
+
+	def insert_cache(self, omit_log):
+		self.cache.append(omit_log)
+
+	def commit_cache(self):
+		for value in self.cache:
+			self.insert(value['no'], value['omit_number'])
+		self.commit()
+
+	def get_avg_omit(self):
+		cursor = self.read("select AVG(omit_number), no from omitlog group by no")
+		omit_log = cursor.fetchone()
+		while omit_log:
+			yield {'avg': omit_log[0], 'no': omit_log[1]}
+			omit_log = cursor.fetchone()
+		self.free(cursor)
+
+
 class Config:
 
 	def __init__(self):
@@ -117,4 +176,3 @@ class Config:
 		json_obj[key] = value
 		json.dump(json_obj, file)
 		file.close()
-
