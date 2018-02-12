@@ -93,6 +93,16 @@ class TwoStarObject(sqlite_db.Table):
 			two_star = cursor.fetchone()
 		self.free(cursor)
 
+	def get_all_by_position(self, position):
+		if not position:
+			return self.get_all()
+		cursor = self.read("select * from twostar where id like ?", [position])
+		two_star = cursor.fetchone()
+		while two_star:
+			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
+			two_star = cursor.fetchone()
+		self.free(cursor)
+
 	def get_one_by_id(self, id):
 		cursor = self.select('*', order_by=None, id=id)
 		two_star = cursor.fetchone()
@@ -148,10 +158,10 @@ class OmitLogObject(sqlite_db.Table):
 		self.commit()
 
 	def get_avg_omit(self):
-		cursor = self.read("select AVG(omit_number), no from omitlog group by no")
+		cursor = self.read("select AVG(omit_number), COUNT(*), no from omitlog group by no")
 		omit_log = cursor.fetchone()
 		while omit_log:
-			yield {'avg': omit_log[0], 'no': omit_log[1]}
+			yield {'avg': omit_log[0], 'count': omit_log[1], 'no': omit_log[2]}
 			omit_log = cursor.fetchone()
 		self.free(cursor)
 

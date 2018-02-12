@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import time
+from enum import Enum
 
 from core.fetch import Fetch
 from db.ssc_dao import AnswerObject, TwoStarObject, Config, OmitLogObject
@@ -67,36 +68,33 @@ class Core:
 		if omit_number > 0:
 			self.omit_log.insert_cache({'no': no, 'omit_number': omit_number})
 
-	def get_two_star_by_strategy(self, omit_percent=None, sort_percent=None):
-
-		result = self.two_star.get_all()
-		two_star_list = []
+	def get_two_star_by_strategy(self, sort_percent, sort_type, position_list=[None]):
+		two_star_dist = {}
+		for position in position_list:
+			result = self.two_star.get_all_by_position(position)
+			for item in result:
+				answer = self.answer.get_last_answer()
+				current_omit_number = self.answer.diff_no(item['last_no'], answer['no'])
+				item['current_omit_number'] = current_omit_number
+				item['max_omit_weight'] = 0
+				if not item['max_omit_number'] == 0:
+					item['max_omit_weight'] = current_omit_number / item['max_omit_number']
+				two_star_dist.setdefault(item['id'], item)
+		# 补齐平均遗漏数
+		result = self.omit_log.get_avg_omit()
 		for item in result:
-			answer = self.answer.get_last_answer()
-			current_omit_number = self.answer.diff_no(item['last_no'], answer['no'])
-			item['current_omit_number'] = current_omit_number
-			item['weight'] = 0
-			if not item['max_omit_number'] == 0:
-				item['weight'] = current_omit_number / item['max_omit_number']
-			two_star_list.append(item)
-		two_star_list = sorted(two_star_list, key=lambda key: key['weight'], reverse=True)
+			two_star = two_star_dist.get(item['no'])
+			if two_star:
+				two_star.setdefault('avg_omit_number', item['avg'])
+				avg_omit_weight = two_star['current_omit_number'] / (200 - item['avg'])
+				two_star.setdefault("avg_omit_weight", avg_omit_weight)
+				two_star.setdefault("bingo_count", item['count'])
 
-		if omit_percent:
-			return self.get_two_star_by_omit(two_star_list, omit_percent)
-		else:
-			return self.get_two_star_by_sort(two_star_list, sort_percent)
+		two_star_list = sorted(two_star_dist.values(), key=lambda key: key[sort_type], reverse=True)
 
-	def get_two_star_by_omit(self, two_star_list, percent):
-		new_two_star_list = []
-		for two_star in two_star_list:
-			if percent < two_star['weight']:
-				new_two_star_list.append(two_star)
-		return new_two_star_list
-
-	def get_two_star_by_sort(self, two_star_list, percent):
 		size = 0
-		if 1 > percent > 0:
-			size = int(len(two_star_list) * percent)
+		if 1 > sort_percent > 0:
+			size = int(len(two_star_list) * sort_percent)
 
 		return two_star_list[:size]
 
@@ -104,5 +102,6 @@ class Core:
 		no = time.strftime('%y%m%d', time.localtime(time.time()))
 		no += "000"
 		return self.answer.get_new_answer(no, order_by='desc')
+
 
 
