@@ -4,6 +4,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from db.ssc_dao import AwardObject, AwardObject
 from ui.ui import UI
 
 
@@ -16,4 +17,3 @@ def run():
 
 if __name__ == '__main__':
 	run()
-
