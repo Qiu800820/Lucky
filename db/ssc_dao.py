@@ -8,7 +8,8 @@ from db import sqlite_db
 
 class AwardObject(sqlite_db.Table):
 	def __init__(self):
-		super(AwardObject, self).__init__("./resouce/ssc.db", "award", ['period TEXT UNIQUE', 'number TEXT', 'id INTEGER PRIMARY KEY AUTOINCREMENT'])
+		super(AwardObject, self).__init__("./resouce/ssc.db", "award",
+		                                  ['period TEXT UNIQUE', 'number TEXT', 'id INTEGER PRIMARY KEY AUTOINCREMENT'])
 
 	def insert(self, *args):
 		self.free(super(AwardObject, self).insert(*args))
@@ -52,7 +53,8 @@ class AwardObject(sqlite_db.Table):
 		self.free(cursor)
 
 	def diff_no(self, last_no, current_no):
-		cursor = self.read("select count(*) as count from award where period > ? and period < ? and number <> ''", [last_no, current_no])
+		cursor = self.read("select count(*) as count from award where period > ? and period < ? and number <> ''",
+		                   [last_no, current_no])
 		diff_no = cursor.fetchone()
 		self.free(cursor)
 		return diff_no[0]
@@ -66,8 +68,8 @@ class AwardObject(sqlite_db.Table):
 
 class TwoStarObject(sqlite_db.Table):
 	def __init__(self):
-		super(TwoStarObject, self).__init__("./resouce/ssc.db", "TwoStar",
-		                                    ["id TEXT PRIMARY KEY", "max_omit_number NUMERIC", "last_no TEXT", "last_id NUMERIC"])
+		super(TwoStarObject, self).__init__(
+			"./resouce/ssc.db", "TwoStar", ["id TEXT PRIMARY KEY", "max_omit_number NUMERIC", "last_no TEXT", "last_id NUMERIC"])
 		self.cache = {}
 
 	def insert(self, *args):
@@ -133,8 +135,8 @@ class TwoStarObject(sqlite_db.Table):
 
 class OmitLogObject(sqlite_db.Table):
 	def __init__(self):
-		super(OmitLogObject, self).__init__("./resouce/ssc.db", "OmitLog",
-		                                    ["no TEXT", "omit_number NUMERIC", "award_no TEXT", "award_id NUMERIC"])
+		super(OmitLogObject, self).__init__(
+			"./resouce/ssc.db", "OmitLog", ["no TEXT", "omit_number NUMERIC", "award_no TEXT", "award_id NUMERIC"])
 		self.cache = []
 
 	def insert(self, *args):
@@ -171,10 +173,17 @@ class OmitLogObject(sqlite_db.Table):
 			omit_log = cursor.fetchone()
 		self.free(cursor)
 
-	def get_all_by_position(self, position):
+	def get_all_by_position(self, position, start_award_id=None, end_award_id=None):
 		if not position:
 			return None
-		cursor = self.read("select no, count(*) from omitlog where no like ? group by no order by count(*)", [position])
+		if start_award_id and end_award_id:
+			cursor = self.read(
+				"select no, count(*) from omitlog where no like ? and award_id > ? and award_id < ? group by no order by count(*)",
+				[position, start_award_id, end_award_id])
+		else:
+			cursor = self.read(
+				"select no, count(*) from omitlog where no like ? and award_id < ?group by no order by count(*)",
+				[position])
 		result = []
 		omit = cursor.fetchone()
 		while omit:
@@ -185,7 +194,6 @@ class OmitLogObject(sqlite_db.Table):
 
 
 class Config:
-
 	def __init__(self):
 		self.path = './resouce/config.json'
 
