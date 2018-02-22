@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import time
-
+import math
 from core.fetch import Fetch
 from db.ssc_dao import AwardObject, TwoStarObject, Config, OmitLogObject
 
@@ -75,7 +75,7 @@ class Core:
 		for position in position_list:
 			result = self.two_star.get_all_by_position(position)
 			for item in result:
-				answer = self.award.get_last_award()
+				answer = self.award.get_last_award() # 获取上期开奖号码
 				current_omit_number = self.award.diff_no(item['last_no'], answer['no'])
 				item['current_omit_number'] = current_omit_number
 				item['max_omit_weight'] = 0
@@ -99,6 +99,30 @@ class Core:
 			size = int(len(two_star_list) * sort_percent)
 
 		return two_star_list[:size]
+
+	def get_two_star_by_strategy_v2(self, position_list=[None]):
+		two_star_result_dist = {}
+		two_star_team_array = []
+		history_total = self.answer.get_total()  # 历史开奖总数
+		for position in position_list:  # 00XXX in [00XXX, 0X0XX]
+			result = self.omit_log.get_all_by_position(position)  # 根据位置取出号码出现次数 [{'no':'11XXX', 'count': 2888}]
+			i = 0
+			two_star_result_dist.setdefault(position, result)
+			team_show_total = 0
+			for item in result:
+				i += 1
+				team_show_total += item['count']
+				two_star_item = {}
+				if 29 < i < 81:
+					avg_percent = team_show_total / history_total
+					perfect_percent = i / 100
+					two_star_item = {'position': position, 'avg_percent': avg_percent,
+					                       'perfect_percent': perfect_percent, 'size': i, 'weight': perfect_percent - avg_percent}
+					two_star_team_array.append(two_star_item)
+				if i > 81 or two_star_item.get('weight', 0) < 0:
+					break
+				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
+		return two_star_team_array, two_star_result_dist
 
 	def get_today_answer(self):
 		no = time.strftime('%y%m%d', time.localtime(time.time()))

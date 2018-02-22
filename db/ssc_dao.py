@@ -57,6 +57,12 @@ class AwardObject(sqlite_db.Table):
 		self.free(cursor)
 		return diff_no[0]
 
+	def get_total(self):
+		cursor = self.read("select count(*) as count from answer where number <> ''")
+		count = cursor.fetchone()
+		self.free(cursor)
+		return count[0]
+
 
 class TwoStarObject(sqlite_db.Table):
 	def __init__(self):
@@ -164,6 +170,18 @@ class OmitLogObject(sqlite_db.Table):
 			yield {'avg': omit_log[0], 'count': omit_log[1], 'no': omit_log[2]}
 			omit_log = cursor.fetchone()
 		self.free(cursor)
+
+	def get_all_by_position(self, position):
+		if not position:
+			return None
+		cursor = self.read("select no, count(*) from omitlog where no like ? group by no order by count(*)", [position])
+		result = []
+		omit = cursor.fetchone()
+		while omit:
+			result.append({'no': omit[0], 'count': omit[1]})
+			omit = cursor.fetchone()
+		self.free(cursor)
+		return result
 
 
 class Config:
