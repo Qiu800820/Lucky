@@ -58,7 +58,7 @@ class AwardObject(sqlite_db.Table):
 		return diff_no[0]
 
 	def get_total(self):
-		cursor = self.read("select count(*) as count from answer where number <> ''")
+		cursor = self.read("select count(*) as count from award where number <> ''")
 		count = cursor.fetchone()
 		self.free(cursor)
 		return count[0]

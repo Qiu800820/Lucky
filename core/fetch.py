@@ -11,7 +11,6 @@ class Fetch:
 	def __init__(self):
 		self.award_db = AwardObject()
 		self.has_change = False  # 是否需要提交事务
-		self.url = 'http://caipiao.163.com/award/cqssc/%s.html'
 
 	# 刷新历史开奖数据
 	# last_no ：本地最新开奖期
@@ -28,16 +27,45 @@ class Fetch:
 				self.award_db.commit()
 				self.has_change = False
 
-	#  加载某一天开奖结果
 	def __query_answer(self, day):
+		result = []
+		has_data = False
+		items = self.__query_answer_163(day=day)
+		for item in items:
+			result.append(item)
+			has_data = True
+		if not has_data:
+			items = self.__query_award_360(day=day)
+			for item in items:
+				result.append(item)
+				has_data = True
+		if has_data:
+			result = sorted(result, key=lambda key: key['no'], reverse=False)
+		return result
+
+	#  加载某一天开奖结果
+	def __query_answer_163(self, day):
 		print('加载%s内容' % day)
-		response = requests.get(self.url % day)
+		response = requests.get('http://caipiao.163.com/award/cqssc/%s.html' % day)
 		response = etree.HTML(response.text)
 		td_list = response.xpath("//table/tr/td[contains(@class, 'start')]")
 		for td in td_list:
 			number = td.xpath("@data-win-number")
-			if number and len(number) > 2:
+			if number and len(number) > 0 and len(number[0]) > 1:
 				yield {'number': number[0], 'no': td.xpath("@data-period")[0], 'day_no': td.xpath("text()")[0]}
+
+	def __query_award_360(self, day):
+		print('加载%s内容' % day)
+		format_day = '%s-%s-%s' % (day[:4], day[4:6], day[6:8])
+		response = requests.get('http://chart.cp.360.cn/kaijiang/kaijiang?lotId=255401&spanType=2&span=%s_%s' % (format_day, format_day))
+		response = etree.HTML(response.text)
+		td_list = response.xpath("//td[contains(@class, 'red big')]")
+		for td in td_list:
+			day_no = td.xpath("../td")[0].xpath("text()")[0]
+			no = day[2:] + day_no
+			number = td.xpath("text()")[0]
+			if number:
+				yield {'number': number, 'no': no, 'day_no': day_no}
 
 
 # 计算需要加载的日期

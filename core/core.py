@@ -45,6 +45,7 @@ class Core:
 			self.two_star.commit_cache()
 			if last_award_no:
 				self.config.write('last_statistics_no', last_award_no)
+			print("全部分析完成")
 
 	# 根据开奖数据更新双星数据
 	def update_two_star(self, award_no, award_number, award_id):
@@ -103,7 +104,7 @@ class Core:
 	def get_two_star_by_strategy_v2(self, position_list=[None]):
 		two_star_result_dist = {}
 		two_star_team_array = []
-		history_total = self.answer.get_total()  # 历史开奖总数
+		history_total = self.award.get_total()  # 历史开奖总数
 		for position in position_list:  # 00XXX in [00XXX, 0X0XX]
 			result = self.omit_log.get_all_by_position(position)  # 根据位置取出号码出现次数 [{'no':'11XXX', 'count': 2888}]
 			i = 0
