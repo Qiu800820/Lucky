@@ -173,17 +173,37 @@ class OmitLogObject(sqlite_db.Table):
 			omit_log = cursor.fetchone()
 		self.free(cursor)
 
-	def get_all_by_position(self, position, start_award_id=None, end_award_id=None):
+	def get_all_by_position(self, position, start_award_id=0, end_award_id=None):
 		if not position:
 			return None
-		if start_award_id and end_award_id:
+		if end_award_id:
 			cursor = self.read(
-				"select no, count(*) from omitlog where no like ? and award_id > ? and award_id < ? group by no order by count(*)",
+				"select no, count(*) from omitlog where no like ? and award_id > ? and award_id < ? group by no order by count(*) asc",
 				[position, start_award_id, end_award_id])
 		else:
 			cursor = self.read(
-				"select no, count(*) from omitlog where no like ? and award_id < ?group by no order by count(*)",
+				"select no, count(*) from omitlog where no like ? group by no order by count(*) asc",
 				[position])
+		result = []
+		omit = cursor.fetchone()
+		while omit:
+			result.append({'no': omit[0], 'count': omit[1]})
+			omit = cursor.fetchone()
+		self.free(cursor)
+		return result
+
+	def get_no_count(self, end_award_id, no_array, start_award_id=0):
+		if not no_array:
+			return None
+		params = "','".join(no_array)
+		if end_award_id:
+			cursor = self.read(
+				"select no, count(*) from omitlog where no in ('%s') and award_id > ? and award_id < ? group by no order by count(*) asc" % params,
+				[start_award_id, end_award_id])
+		else:
+			cursor = self.read(
+				"select no, count(*) from omitlog where no in ('%s') group by no order by count(*) asc" % params,
+				None)
 		result = []
 		omit = cursor.fetchone()
 		while omit:

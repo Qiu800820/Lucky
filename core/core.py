@@ -125,9 +125,11 @@ class Core:
 				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
 		return two_star_team_array, two_star_result_dist
 
-	def get_regression_cycle(self):
-		start_period = 5000
-
+	def get_regression_cycle(self, start_period):
+		money_count = 0
+		step = 500
+		max_loop_count = 20
+		max_total = self.award.get_last_award()['id']
 		# for i in range(1000): # 计算1000次 得出平均概率
 		# step1 计算最大偏差
 		total = start_period
@@ -136,18 +138,40 @@ class Core:
 		max_deviation_count = 0
 		# 根据位置取出号码出现次数 [{'no':'11XXX', 'count': 2888}]
 		result = self.omit_log.get_all_by_position('__XXX', start_award_id=0, end_award_id=total)
+		print('初始化参数: max_total:%s, total:%s, result_len:%s' % (max_total, total, len(result)))
+		print('平均值:', avg_count, '号码组合出现概率:', result)
 		for item in result:
 			if item['count'] >= avg_count:
 				break
-			max_deviation_count += item['count']
+			max_deviation_count += (avg_count - item['count'])
 			max_deviation_number_array.append(item['no'])
 		# step2 开始回补偏差
 		size = len(max_deviation_number_array)
-		while max_deviation_count > 0:
-			print('分析期数:%s,组合数:%s,偏差值:%s' % (total, size, max_deviation_count))
-			total += max_deviation_count * (100 / size)
-			result = self.omit_log.get_no_count(start_award_id=0, end_award_id=total, no_array=max_deviation_number_array)
+		loop = 0
+		while max_deviation_count > 0 and total < max_total and loop < max_loop_count:
+			loop += 1
+			print('分析期数:%s,组合数:%s,偏差值:%s, 偏差率;%s' % (total, size, max_deviation_count, max_deviation_count/total))  # 回归过程
 
+			# total += int(max_deviation_count * (100 / size))
+
+			last_count = avg_count * size - max_deviation_count
+
+			total += step
+			result = self.omit_log.get_no_count(start_award_id=0, end_award_id=total, no_array=max_deviation_number_array)
+			avg_count = math.ceil(total / 100)
+			max_deviation_count = 0
+
+			# print('平均值:', avg_count, '号码组合出现概率:', result)  # 详细信息
+
+			for item in result:
+				max_deviation_count += (avg_count - item['count'])
+
+			count = avg_count * size - max_deviation_count
+			money = 100 * (count - last_count) - step * size
+			money_count += money
+			print("%s期盈利数据 --- 成本：%s, 中奖次数：%s, 盈利：%s, 总盈利：%s" % (step, step * size, count - last_count, money, money_count))  # 盈利数据
+
+		# print('回补完成 ----> 分析期数:%s,组合数:%s,偏差值:%s' % (total, size, max_deviation_count))
 
 	def get_today_answer(self):
 		no = time.strftime('%y%m%d', time.localtime(time.time()))

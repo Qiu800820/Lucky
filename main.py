@@ -4,6 +4,7 @@ import sys
 
 from PyQt5.QtWidgets import QApplication
 
+from core.core import Core
 from db.ssc_dao import AwardObject, AwardObject
 from ui.ui import UI
 
@@ -15,5 +16,13 @@ def run():
 	ui.show()
 	sys.exit(app.exec_())
 
+
+def test():
+	core = Core()
+
+	for i in range(100):
+		core.get_regression_cycle(70000 + i * 2000)
+
 if __name__ == '__main__':
-	run()
+	# run()
+	test()
