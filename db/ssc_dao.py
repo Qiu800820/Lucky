@@ -173,6 +173,12 @@ class OmitLogObject(sqlite_db.Table):
 			omit_log = cursor.fetchone()
 		self.free(cursor)
 
+	def get_by_period(self, period):
+		cursor = self.read("select * from omitlog where award_id = ?", [period])
+		omit_log = cursor.fetchone()
+		self.free(cursor)
+		return {'no': omit_log[0], 'omit_number': omit_log[1], 'award_no': omit_log[2], 'award_id': omit_log[3]}
+
 	def get_all_by_position(self, position, start_award_id=0, end_award_id=None):
 		if not position:
 			return None
@@ -188,6 +194,22 @@ class OmitLogObject(sqlite_db.Table):
 		omit = cursor.fetchone()
 		while omit:
 			result.append({'no': omit[0], 'count': omit[1]})
+			omit = cursor.fetchone()
+		self.free(cursor)
+		return result
+
+	def get_omit_by_position(self, position, period):
+		if not position:
+			return None
+
+		cursor = self.read(
+			"select no, max(award_id) from omitlog where no like ? and award_id < ? group by no order by award_id",
+			[position, period])
+
+		result = []
+		omit = cursor.fetchone()
+		while omit:
+			result.append({'no': omit[0], 'award_id': omit[1]})
 			omit = cursor.fetchone()
 		self.free(cursor)
 		return result

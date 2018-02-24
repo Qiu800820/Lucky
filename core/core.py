@@ -125,9 +125,33 @@ class Core:
 				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
 		return two_star_team_array, two_star_result_dist
 
+	def get_omit_strategy(self, period, count=100, size=40):
+		bingo_count = 0
+		number_total = 0
+		omit_number_array = []
+		result = self.omit_log.get_omit_by_position('__XXX', period=period)
+		for index in range(size):
+			item = result[index]
+			omit_number_array.append(item['no'])
+		for i in range(count):
+			number_size = len(omit_number_array)
+			period += 1
+			award_number = self.omit_log.get_by_period(period)
+			if award_number['no'] in omit_number_array:
+				bingo_count += 1
+				print("中奖!!! 组合数:%s, 盈利:%s,  总盈利:%s" % (number_size, 100 - number_size, bingo_count * 100 - number_total))
+			else:
+				print("xxx 组合数:%s 未中奖 ,  总盈利:%s xxx" % (number_size, bingo_count * 100 - number_total))
+			number_total += number_size
+			omit_number_array = []
+			result = self.omit_log.get_omit_by_position('__XXX', period=period)
+			for index in range(size):
+				item = result[index]
+				omit_number_array.append(item['no'])
+
 	def get_regression_cycle(self, start_period):
 		money_count = 0
-		step = 500
+		step = 10000
 		max_loop_count = 20
 		max_total = self.award.get_last_award()['id']
 		# for i in range(1000): # 计算1000次 得出平均概率
@@ -151,8 +175,8 @@ class Core:
 		while max_deviation_count > 0 and total < max_total and loop < max_loop_count:
 			loop += 1
 			print('分析期数:%s,组合数:%s,偏差值:%s, 偏差率;%s' % (total, size, max_deviation_count, max_deviation_count/total))  # 回归过程
-
-			# total += int(max_deviation_count * (100 / size))
+			# 动态调配
+			# step = int(max_deviation_count * (100 / size))
 
 			last_count = avg_count * size - max_deviation_count
 
@@ -171,7 +195,7 @@ class Core:
 			money_count += money
 			print("%s期盈利数据 --- 成本：%s, 中奖次数：%s, 盈利：%s, 总盈利：%s" % (step, step * size, count - last_count, money, money_count))  # 盈利数据
 
-		# print('回补完成 ----> 分析期数:%s,组合数:%s,偏差值:%s' % (total, size, max_deviation_count))
+		print('回补完成 ----> 分析期数:%s,组合数:%s,偏差值:%s' % (total, size, max_deviation_count))
 
 	def get_today_answer(self):
 		no = time.strftime('%y%m%d', time.localtime(time.time()))
