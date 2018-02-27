@@ -125,6 +125,7 @@ class Core:
 				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
 		return two_star_team_array, two_star_result_dist
 
+	# 组合遗漏数情况
 	def get_omit_strategy(self, period, count=100, size=40):
 		bingo_count = 0
 		number_total = 0
@@ -149,10 +150,43 @@ class Core:
 				item = result[index]
 				omit_number_array.append(item['no'])
 
-	def get_regression_cycle(self, start_period):
+	def get_max_drop_regression(self, start_period, group_size, step=120, loop=100):
+		current_result = self.omit_log.get_all_by_position('__XXX', start_award_id=0, end_award_id=start_period)
+		regression_dist = {}
+		regression_array = []
+		diff_count = 0
+		print(current_result)
+		# [{'no':'00XXX', 'count':'120'}, {'no':'01XXX', 'count':'121'}] ==> {'01XXX':121, '00XXX':120}
+		for item in current_result:
+			regression_dist.setdefault(item['no'], item['count'])
+		last_result = self.omit_log.get_all_by_position('__XXX', start_award_id=0, end_award_id=start_period - step*loop)
+		# [{'no':'00XXX', 'count':'110'}, {'no':'01XXX', 'count':'111'}] ===>
+		# [{'no':'00XXX', 'count':'110', 'diff': 10}, {'no':'01XXX', 'count':'111', 'diff': 10}]
+		print(last_result)
+		for item in last_result:
+			diff = regression_dist.get(item['no'], 0) - item['count']
+			item.setdefault('diff', diff)
+		last_result = sorted(last_result, key=lambda key: key['diff'], reverse=False)[:group_size]
+		print(last_result)
+		for item in last_result:
+			regression_array.append(item['no'])
+			diff_count += item['diff']
+		print('最大下跌组合:%s, 下跌数:%s' % (regression_array, group_size*step*loop / 100 - diff_count))
+		return regression_array, diff_count
+
+
+	def get_regression_cycle_v2(self, start_period, group_size, no_array):
+		result = self.omit_log.get_no_count(start_award_id=0, end_award_id=start_period, no_array=no_array)
+		group = result[:group_size]
+		avg_count = start_period / 100
+		deviation_count = 0
+		for item in group:
+			deviation_count += (avg_count - item['count'])
+		print('期数:%s, %s组最大偏差数:%s, 偏差率:%s' % (start_period, group_size, deviation_count, deviation_count/start_period))
+
+	# 计算偏差数与偏差率变化
+	def get_regression_cycle(self, start_period, loop_start_period, step=500, max_loop_count=20):
 		money_count = 0
-		step = 10000
-		max_loop_count = 20
 		max_total = self.award.get_last_award()['id']
 		# for i in range(1000): # 计算1000次 得出平均概率
 		# step1 计算最大偏差
@@ -172,6 +206,8 @@ class Core:
 		# step2 开始回补偏差
 		size = len(max_deviation_number_array)
 		loop = 0
+		if loop_start_period:
+			total = loop_start_period
 		while max_deviation_count > 0 and total < max_total and loop < max_loop_count:
 			loop += 1
 			print('分析期数:%s,组合数:%s,偏差值:%s, 偏差率;%s' % (total, size, max_deviation_count, max_deviation_count/total))  # 回归过程
