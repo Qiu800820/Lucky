@@ -125,6 +125,17 @@ class Core:
 				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
 		return two_star_team_array, two_star_result_dist
 
+	def get_two_star_by_strategy_v3(self, group_size, step, loop, position_list=['__XXX']):
+		two_star_team_array = []
+		for position in position_list:
+			regression_array, regression_count = self.get_max_drop_regression(position, group_size, step, loop)
+			two_star_team_array.append({
+				'regression_array': regression_array, 'regression_count': regression_count, 'position': position,
+				'group_size': group_size, 'regression_percent': regression_count / (step * loop)
+			})
+		two_star_team_array = sorted(two_star_team_array, key=lambda key: key['regression_count'], reverse=True)
+		return two_star_team_array
+
 	# 组合遗漏数情况
 	def get_omit_strategy(self, period, count=100, size=40):
 		bingo_count = 0
@@ -150,7 +161,11 @@ class Core:
 				item = result[index]
 				omit_number_array.append(item['no'])
 
-	def get_max_drop_regression(self, start_period, group_size, step=120, loop=100):
+	def get_max_drop_regression(self, position, group_size, step=120, loop=100, start_period=None):
+		if not start_period:
+			max_total = self.award.get_last_award()['id']
+			start_period = max_total - step * loop
+
 		current_result = self.omit_log.get_all_by_position('__XXX', start_award_id=0, end_award_id=start_period)
 		regression_dist = {}
 		regression_array = []
@@ -159,21 +174,19 @@ class Core:
 		# [{'no':'00XXX', 'count':'120'}, {'no':'01XXX', 'count':'121'}] ==> {'01XXX':121, '00XXX':120}
 		for item in current_result:
 			regression_dist.setdefault(item['no'], item['count'])
-		last_result = self.omit_log.get_all_by_position('__XXX', start_award_id=0, end_award_id=start_period - step*loop)
+		last_result = self.omit_log.get_all_by_position(position, start_award_id=0, end_award_id=start_period - step*loop)
 		# [{'no':'00XXX', 'count':'110'}, {'no':'01XXX', 'count':'111'}] ===>
 		# [{'no':'00XXX', 'count':'110', 'diff': 10}, {'no':'01XXX', 'count':'111', 'diff': 10}]
 		print(last_result)
 		for item in last_result:
 			diff = regression_dist.get(item['no'], 0) - item['count']
 			item.setdefault('diff', diff)
-		last_result = sorted(last_result, key=lambda key: key['diff'], reverse=False)[:group_size]
-		print(last_result)
+		last_result = sorted(last_result, key=lambda key: key['diff'], reverse=False)[:group_size + 9]
 		for item in last_result:
 			regression_array.append(item['no'])
 			diff_count += item['diff']
 		print('最大下跌组合:%s, 下跌数:%s' % (regression_array, group_size*step*loop / 100 - diff_count))
 		return regression_array, diff_count
-
 
 	def get_regression_cycle_v2(self, start_period, group_size, no_array):
 		result = self.omit_log.get_no_count(start_award_id=0, end_award_id=start_period, no_array=no_array)

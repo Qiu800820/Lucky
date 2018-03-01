@@ -78,7 +78,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>220</y>
+      <y>180</y>
       <width>531</width>
       <height>31</height>
      </rect>
@@ -104,7 +104,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>300</y>
+      <y>240</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -117,7 +117,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>320</y>
+      <y>270</y>
       <width>531</width>
       <height>211</height>
      </rect>
@@ -134,17 +134,12 @@
     </column>
     <column>
      <property name="text">
-      <string>组合平均概率</string>
+      <string>组合偏差下降数</string>
      </property>
     </column>
     <column>
      <property name="text">
-      <string>组合理论概率</string>
-     </property>
-    </column>
-    <column>
-     <property name="text">
-      <string>权重</string>
+      <string>组合偏差下降率</string>
      </property>
     </column>
    </widget>
@@ -152,7 +147,7 @@
     <property name="geometry">
      <rect>
       <x>260</x>
-      <y>550</y>
+      <y>500</y>
       <width>511</width>
       <height>23</height>
      </rect>
@@ -165,7 +160,7 @@
     <property name="geometry">
      <rect>
       <x>250</x>
-      <y>590</y>
+      <y>540</y>
       <width>531</width>
       <height>201</height>
      </rect>
@@ -175,7 +170,7 @@
     <property name="geometry">
      <rect>
       <x>370</x>
-      <y>300</y>
+      <y>240</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -188,7 +183,7 @@
     <property name="geometry">
      <rect>
       <x>310</x>
-      <y>300</y>
+      <y>240</y>
       <width>54</width>
       <height>12</height>
      </rect>
@@ -226,7 +221,7 @@
         <string>12XX</string>
        </property>
        <property name="checked">
-        <bool>false</bool>
+        <bool>true</bool>
        </property>
       </widget>
      </item>
@@ -276,11 +271,136 @@
         <string>XX34</string>
        </property>
        <property name="checked">
-        <bool>true</bool>
+        <bool>false</bool>
        </property>
       </widget>
      </item>
     </layout>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>92</y>
+      <width>54</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>周期大小</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox">
+    <property name="geometry">
+     <rect>
+      <x>320</x>
+      <y>90</y>
+      <width>42</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>200</number>
+    </property>
+    <property name="value">
+     <number>120</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>390</x>
+      <y>92</y>
+      <width>54</width>
+      <height>20</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>周期数</string>
+    </property>
+   </widget>
+   <widget class="QSpinBox" name="spinBox_2">
+    <property name="geometry">
+     <rect>
+      <x>430</x>
+      <y>90</y>
+      <width>42</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <number>1000</number>
+    </property>
+    <property name="value">
+     <number>100</number>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_6">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>140</y>
+      <width>54</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>组合数</string>
+    </property>
+   </widget>
+   <widget class="QSlider" name="horizontalSlider">
+    <property name="geometry">
+     <rect>
+      <x>310</x>
+      <y>140</y>
+      <width>160</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="minimum">
+     <number>30</number>
+    </property>
+    <property name="maximum">
+     <number>80</number>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
+    </property>
+   </widget>
+   <widget class="QLCDNumber" name="lcdNumber">
+    <property name="geometry">
+     <rect>
+      <x>480</x>
+      <y>140</y>
+      <width>64</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="segmentStyle">
+     <enum>QLCDNumber::Flat</enum>
+    </property>
+    <property name="value" stdset="0">
+     <double>30.000000000000000</double>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="lucky_2">
+    <property name="geometry">
+     <rect>
+      <x>260</x>
+      <y>760</y>
+      <width>511</width>
+      <height>23</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>模拟盈利结果</string>
+    </property>
    </widget>
   </widget>
  </widget>

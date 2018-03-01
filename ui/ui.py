@@ -17,7 +17,6 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		self.setupUi(self)
 		self.core = Core()
 		self.two_star_team_list = []
-		self.two_star_result_dist = {}
 
 	def setupUi(self, Lucky):
 		super(UI, self).setupUi(Lucky=Lucky)
@@ -40,7 +39,7 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 	# 重新计算结果
 	def statistics_two_star(self):
 
-		button_status_chang(self.statistics, disabled=True)  # 按钮防抖
+		button_status_chang(self.statistics, disabled=True)
 		try:
 			strategy = self.get_strategy()
 			self.show_two_star_result(strategy['position_list'])
@@ -76,7 +75,7 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 
 	def show_two_star_result(self, position_list):
 		self.result_table.clearContents()
-		self.two_star_team_list, self.two_star_result_dist = self.core.get_two_star_by_strategy_v2(position_list)
+		self.two_star_team_list = self.core.get_two_star_by_strategy_v2(position_list)
 
 		row = 0
 		size = len(self.two_star_team_list)
@@ -84,10 +83,9 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		self.label_3.setText(str(size))
 		for two_star in self.two_star_team_list:
 			self.result_table.setItem(row, 0, QtWidgets.QTableWidgetItem(two_star['position']))  # 位置
-			self.result_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(two_star['size'])))  # 组合数
-			self.result_table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(two_star['avg_percent'])))  # 组合平均概率
-			self.result_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(two_star['perfect_percent'])))  # 组合理论概率
-			self.result_table.setItem(row, 4, QtWidgets.QTableWidgetItem(str(two_star['weight'])))  # 权重
+			self.result_table.setItem(row, 1, QtWidgets.QTableWidgetItem(str(two_star['group_size'])))  # 组合数
+			self.result_table.setItem(row, 2, QtWidgets.QTableWidgetItem(str(two_star['regression_count'])))  # 偏差下降数
+			self.result_table.setItem(row, 3, QtWidgets.QTableWidgetItem(str(two_star['regression_percent'])))  # 偏差下降率
 			row += 1
 
 	def show_answer(self):
@@ -109,11 +107,8 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 	def lucky_lucky(self):
 		index = self.result_table.currentItem().row()
 		two_star_team = self.two_star_team_list[index]
-		two_star_list = self.two_star_result_dist.get(two_star_team['position'])
-		number_list = []
-		for two_star in two_star_list:
-			number_list.append(two_star['no'])
-		self.result_edit.setText(','.join(number_list))
+		two_star_list = two_star_team.get('regression_array')
+		self.result_edit.setText(','.join(two_star_list))
 
 
 def button_status_chang(button, disabled):
