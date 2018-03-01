@@ -23,6 +23,8 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		self.refresh.clicked.connect(self.refresh_answer)
 		self.statistics.clicked.connect(self.statistics_two_star)
 		self.lucky.clicked.connect(self.lucky_lucky)
+		self.lucky_2.clicked.connect(self.mock_lucky)
+		self.horizontalSlider.valueChanged.connect(self.lcdNumber.display)
 
 	# 刷新开奖结果
 	def refresh_answer(self):
@@ -42,7 +44,7 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		button_status_chang(self.statistics, disabled=True)
 		try:
 			strategy = self.get_strategy()
-			self.show_two_star_result(strategy['position_list'])
+			self.show_two_star_result(**strategy)
 
 		except Exception as e:
 			self.show_toast(message=e)
@@ -64,7 +66,10 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 			position_list.append('X__XX')
 		if self.checkBox_8.isChecked():
 			position_list.append('XX__X')
-		return {"position_list": position_list}
+		group_size = self.lcdNumber.value()
+		step = self.spinBox.value()
+		loop = self.spinBox_2.value()
+		return {"position_list": position_list, 'group_size': group_size, 'step': step, 'loop': loop}
 
 	def show_toast(self, message):
 		QMessageBox.information(self, "Lucky", str(message), QMessageBox.Yes)
@@ -73,9 +78,10 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		super(UI, self).show()
 		self.show_answer()
 
-	def show_two_star_result(self, position_list):
+	def show_two_star_result(self, **statistics):
 		self.result_table.clearContents()
-		self.two_star_team_list = self.core.get_two_star_by_strategy_v2(position_list)
+		self.two_star_team_list = self.core.get_two_star_by_strategy_v3(
+			statistics['group_size'], statistics['step'], statistics['loop'], statistics['position_list'])
 
 		row = 0
 		size = len(self.two_star_team_list)
@@ -103,6 +109,10 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 				row += 1
 		else:
 			self.show_toast('今日未开奖！')
+
+	def mock_lucky(self):
+		# UI 缺少期数参数
+		self.core.mock_lucky()
 
 	def lucky_lucky(self):
 		index = self.result_table.currentItem().row()

@@ -71,6 +71,7 @@ class Core:
 		if omit_number > 0:
 			self.omit_log.insert_cache({'no': no, 'omit_number': omit_number, 'award_no': award_no, 'award_id': award_id})
 
+	# 当前遗漏数/平均遗漏数
 	def get_two_star_by_strategy(self, sort_percent, sort_type, position_list=[None]):
 		two_star_dist = {}
 		for position in position_list:
@@ -101,6 +102,7 @@ class Core:
 
 		return two_star_list[:size]
 
+	# 出现概率较低的号码组合
 	def get_two_star_by_strategy_v2(self, position_list=[None]):
 		two_star_result_dist = {}
 		two_star_team_array = []
@@ -125,6 +127,7 @@ class Core:
 				two_star_team_array = sorted(two_star_team_array, key=lambda key: key['weight'], reverse=True)
 		return two_star_team_array, two_star_result_dist
 
+	# 周期内偏差数持续下跌号码组合
 	def get_two_star_by_strategy_v3(self, group_size, step, loop, position_list=['__XXX']):
 		two_star_team_array = []
 		for position in position_list:
@@ -161,6 +164,7 @@ class Core:
 				item = result[index]
 				omit_number_array.append(item['no'])
 
+	# 获取周期内遗漏数下跌最大号码组合
 	def get_max_drop_regression(self, position, group_size, step=120, loop=100, start_period=None):
 		if not start_period:
 			max_total = self.award.get_last_award()['id']
@@ -188,16 +192,7 @@ class Core:
 		print('最大下跌组合:%s, 下跌数:%s' % (regression_array, group_size*step*loop / 100 - diff_count))
 		return regression_array, diff_count
 
-	def get_regression_cycle_v2(self, start_period, group_size, no_array):
-		result = self.omit_log.get_no_count(start_award_id=0, end_award_id=start_period, no_array=no_array)
-		group = result[:group_size]
-		avg_count = start_period / 100
-		deviation_count = 0
-		for item in group:
-			deviation_count += (avg_count - item['count'])
-		print('期数:%s, %s组最大偏差数:%s, 偏差率:%s' % (start_period, group_size, deviation_count, deviation_count/start_period))
-
-	# 计算偏差数与偏差率变化
+	# 模拟计算偏差数与偏差率变化
 	def get_regression_cycle(self, start_period, loop_start_period, step=500, max_loop_count=20):
 		money_count = 0
 		max_total = self.award.get_last_award()['id']
@@ -246,10 +241,36 @@ class Core:
 
 		print('回补完成 ----> 分析期数:%s,组合数:%s,偏差值:%s' % (total, size, max_deviation_count))
 
+	# 模拟计算组合号码周期内偏差数变化
+	def get_regression_cycle_v2(self, start_period, group_size, no_array):
+		result = self.omit_log.get_no_count(start_award_id=0, end_award_id=start_period, no_array=no_array)
+		group = result[:group_size]
+		avg_count = start_period / 100
+		deviation_count = 0
+		for item in group:
+			deviation_count += (avg_count - item['count'])
+		print('期数:%s, %s组最大偏差数:%s' % (start_period, group_size, deviation_count))
+
 	def get_today_answer(self):
 		no = time.strftime('%y%m%d', time.localtime(time.time()))
 		no += "000"
 		return self.award.get_new_award(no, order_by='desc')
 
+	def mock_lucky(self, start_period, no_array, step, loop):
+		total = self.award.get_total()
+		money_count = 0
+		size = len(no_array)
+		for i in range(loop):
+			if start_period >= total:
+				print('模拟结束 --- 超出当前号码期数！！！')
+				break
 
-
+			end_period = start_period + step * i
+			result = self.omit_log.get_no_count(start_award_id=start_period, end_award_id=end_period, no_array=no_array)
+			bingo_count = 0
+			for item in result:
+				bingo_count += item['count']
+			money = 100 * bingo_count - step * size
+			money_count += money
+			print("%s期盈利数据 --- 成本：%s, 中奖次数：%s, 盈利：%s, 总盈利：%s" % (step, step * size, bingo_count, money, money_count))  # 盈利数据
+			start_period = end_period
