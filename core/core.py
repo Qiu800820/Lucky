@@ -131,6 +131,7 @@ class Core:
 	def get_two_star_by_strategy_v3(self, group_size, step, loop, position_list=['__XXX']):
 		two_star_team_array = []
 		for position in position_list:
+			print('正在分析位置:', position)
 			regression_array, regression_count = self.get_max_drop_regression(position, group_size, step, loop)
 			two_star_team_array.append({
 				'regression_array': regression_array, 'regression_count': regression_count, 'position': position,
@@ -174,23 +175,22 @@ class Core:
 		regression_dist = {}
 		regression_array = []
 		diff_count = 0
-		print(current_result)
 		# [{'no':'00XXX', 'count':'120'}, {'no':'01XXX', 'count':'121'}] ==> {'01XXX':121, '00XXX':120}
 		for item in current_result:
 			regression_dist.setdefault(item['no'], item['count'])
 		last_result = self.omit_log.get_all_by_position(position, start_award_id=0, end_award_id=start_period - step*loop)
 		# [{'no':'00XXX', 'count':'110'}, {'no':'01XXX', 'count':'111'}] ===>
 		# [{'no':'00XXX', 'count':'110', 'diff': 10}, {'no':'01XXX', 'count':'111', 'diff': 10}]
-		print(last_result)
 		for item in last_result:
 			diff = regression_dist.get(item['no'], 0) - item['count']
 			item.setdefault('diff', diff)
-		last_result = sorted(last_result, key=lambda key: key['diff'], reverse=False)[:group_size + 9]
+		last_result = sorted(last_result, key=lambda key: key['diff'], reverse=False)[:group_size]
 		for item in last_result:
 			regression_array.append(item['no'])
 			diff_count += item['diff']
-		print('最大下跌组合:%s, 下跌数:%s' % (regression_array, group_size*step*loop / 100 - diff_count))
-		return regression_array, diff_count
+		regression_count = group_size*step*loop / 100 - diff_count
+		print('最大下跌组合:%s, 下跌数:%s' % (regression_array, regression_count))
+		return regression_array, regression_count
 
 	# 模拟计算偏差数与偏差率变化
 	def get_regression_cycle(self, start_period, loop_start_period, step=500, max_loop_count=20):
@@ -265,12 +265,16 @@ class Core:
 				print('模拟结束 --- 超出当前号码期数！！！')
 				break
 
-			end_period = start_period + step * i
+			end_period = start_period + step
 			result = self.omit_log.get_no_count(start_award_id=start_period, end_award_id=end_period, no_array=no_array)
 			bingo_count = 0
 			for item in result:
 				bingo_count += item['count']
 			money = 100 * bingo_count - step * size
 			money_count += money
-			print("%s期盈利数据 --- 成本：%s, 中奖次数：%s, 盈利：%s, 总盈利：%s" % (step, step * size, bingo_count, money, money_count))  # 盈利数据
+			print("%s - %s期盈利数据 --- 成本：%s, 中奖次数：%s, 盈利：%s, 总盈利：%s" % (start_period, end_period, step * size, bingo_count, money, money_count))  # 盈利数据
 			start_period = end_period
+		return "总盈利：%s" % money_count
+
+	def get_award_total(self):
+		return self.award.get_total()

@@ -1,10 +1,13 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import traceback
+
+import sys
 from PyQt5 import QtCore
 
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QMessageBox
+from qtconsole.qt import QtGui
 
 from core.core import Core
 from ui.lucky import Ui_Lucky
@@ -26,12 +29,16 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 		self.lucky_2.clicked.connect(self.mock_lucky)
 		self.horizontalSlider.valueChanged.connect(self.lcdNumber.display)
 
+		# sys.stdout = EmittingStream(textWritten=self.normal_output_written)
+		# sys.stderr = EmittingStream(textWritten=self.normal_output_written)
+
 	# 刷新开奖结果
 	def refresh_answer(self):
 		button_status_chang(self.refresh, disabled=True)  # 按钮防抖
 		try:
 			self.core.refresh_answer()
 			self.show_answer()
+			self.lineEdit.setText(str(self.core.get_award_total()))
 		except Exception as e:
 			self.show_toast(message=e)
 			traceback.print_exc(file=open('log.txt', 'a+'))
@@ -66,10 +73,22 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 			position_list.append('X__XX')
 		if self.checkBox_8.isChecked():
 			position_list.append('XX__X')
-		group_size = self.lcdNumber.value()
+		group_size = int(self.lcdNumber.value())
 		step = self.spinBox.value()
 		loop = self.spinBox_2.value()
-		return {"position_list": position_list, 'group_size': group_size, 'step': step, 'loop': loop}
+		mock_step = self.spinBox_3.value()
+		mock_loop = self.spinBox_4.value()
+		try:
+			start_period = int(self.lineEdit.text())
+		except Exception as e:
+			self.show_toast('数据量输入无效， 只能填写数字！')
+			traceback.print_exc(file=open('log.txt', 'a+'))
+			self.lineEdit.setText('50000')
+			start_period = 50000
+		return {
+			"position_list": position_list, 'group_size': group_size, 'step': step, 'loop': loop, 'mock_step': mock_step,
+			'mock_loop': mock_loop, 'start_period': start_period
+		}
 
 	def show_toast(self, message):
 		QMessageBox.information(self, "Lucky", str(message), QMessageBox.Yes)
@@ -112,13 +131,35 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 
 	def mock_lucky(self):
 		# UI 缺少期数参数
-		self.core.mock_lucky()
+		strategy = self.get_strategy()
+		text = self.result_edit.toPlainText()
+		no_array = None
+		if text:
+			no_array = text.split(',')
+		if no_array:
+			result = self.core.mock_lucky(strategy['start_period'], no_array, strategy['mock_step'], strategy['mock_loop'])
+			self.textEdit.setText(result)
+
+		else:
+			self.show_toast('生成号码组为空， 不能模拟盈利数据')
 
 	def lucky_lucky(self):
 		index = self.result_table.currentItem().row()
 		two_star_team = self.two_star_team_list[index]
 		two_star_list = two_star_team.get('regression_array')
 		self.result_edit.setText(','.join(two_star_list))
+
+	def __del__(self):
+		sys.stdout = sys.__stdout__
+		sys.stderr = sys.__stderr__
+
+
+class EmittingStream(QtCore.QObject):
+
+	textWritten = QtCore.pyqtSignal(str)
+
+	def write(self, text):
+		self.textWritten.emit(str(text))
 
 
 def button_status_chang(button, disabled):

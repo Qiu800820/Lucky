@@ -97,7 +97,7 @@ class TwoStarObject(sqlite_db.Table):
 		cursor = self.select_all('*', order_by=None)
 		two_star = cursor.fetchone()
 		while two_star:
-			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
+			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2], 'last_id': two_star[3]}
 			two_star = cursor.fetchone()
 		self.free(cursor)
 
@@ -107,7 +107,7 @@ class TwoStarObject(sqlite_db.Table):
 		cursor = self.read("select * from twostar where id like ?", [position])
 		two_star = cursor.fetchone()
 		while two_star:
-			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
+			yield {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2], 'last_id': two_star[3]}
 			two_star = cursor.fetchone()
 		self.free(cursor)
 
@@ -116,7 +116,7 @@ class TwoStarObject(sqlite_db.Table):
 		two_star = cursor.fetchone()
 		self.free(cursor)
 		if two_star:
-			two_star = {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2]}
+			two_star = {'id': two_star[0], 'max_omit_number': two_star[1], 'last_no': two_star[2], 'last_id': two_star[3]}
 		return two_star
 
 	def get_one_by_id_cache(self, id):
