@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-import requests
 import time
+
+import requests
 from lxml import etree
 
-from db.ssc_dao import AwardObject
+from Invoker.db.ssc_dao import AwardObject
 
 
 class Fetch:
