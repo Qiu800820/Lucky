@@ -99,7 +99,6 @@ class Core:
 		size = 0
 		if 1 > sort_percent > 0:
 			size = int(len(two_star_list) * sort_percent)
-
 		return two_star_list[:size]
 
 	# 出现概率较低的号码组合

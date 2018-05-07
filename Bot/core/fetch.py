@@ -58,14 +58,14 @@ def get_format_day():
 
 
 # 计算需要加载的期数
-def get_day_no():
+def get_day_no(extra_time=0):
 	no = None
-	current_second = int(time.time()) - 10  # 10秒为程序误差时间
+	current_second = int(time.time()) + extra_time  # 提前时间
 	current_second %= 86400
 
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00 -> 24-96
-		no = 24 + int((current_second - 2 * 3600) / 360)
+		no = 24 + int((current_second - 2 * 3600) / 600)
 	elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
-		no = 97 + int((current_second - 14 * 3600) / 180)
+		no = 97 + int((current_second - 14 * 3600) / 300)
 	return no
 

@@ -1,19 +1,23 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-import sched
-import time
-
+import os
+import threading
 import itchat
 from itchat.content import *
-
-from Bot.core.fetch import Fetch
+from Bot.core.fetch import *
 
 isReceived = False
 chatRoomName = '自动时时彩'
 BossName = 'Boss'
+BossUserName = None
 chat_rooms = None
 fetch = Fetch()
-
+last_answer_no = None
+preview_time = 60  # 提前60秒收盘
+answer_refresh_time = 60
+close_game_img = os.path.join(os.path.dirname(__file__), '../resource/close_game.png')
+open_game_img = os.path.join(os.path.dirname(__file__), '../resource/open_game.png')
+print(close_game_img)
 #
 # @itchat.msg_register(TEXT, isGroupChat=True)
 # def received(msg):
@@ -32,60 +36,97 @@ fetch = Fetch()
 @itchat.msg_register(TEXT)
 def command(msg):
 	global isReceived
-	if not msg['UserName'] == BossName:
+	if not msg['FromUserName'] == get_boss_user_name():
 		return None
 	print(msg)
 	if '开始' in msg['Content']:
 		isReceived = True
+		run_threaded(None, open_game)
+		run_threaded(None, show_answer)
 	elif '停止' in msg['Content']:
 		isReceived = False
+		close_game()
 
 
 def open_game():
+	if not isReceived:
+		return
 	print('开盘')
 	global chat_rooms
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
+	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('开盘时间， 开始打码', toUserName=chat_room['UserName'])
+		itchat.send('%s期开盘， 开始打码' % no, toUserName=chat_room['UserName'])
+		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
+	# 自动计算收盘时间
+	delay_run(get_time(), close_game)
 
 
 def close_game():
 	print('收盘')
+	no = get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
-			itchat.send('收盘时间， 停止打码', toUserName=chat_room['UserName'])
-
-	delay_run(60, show_answer)
+			itchat.send('%s期收盘， 停止打码' % no, toUserName=chat_room['UserName'])
+			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
+	if isReceived:
+		# 10秒后开启下期盘口
+		delay_run(10, open_game)
 
 
 def show_answer():
+	if not isReceived:
+		return
+	global last_answer_no
 	print('开奖')
 	result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
-	if result:
-		result = result['number']
-	if chat_rooms:
+	if result and chat_rooms and last_answer_no != result['day_no']:
+		last_answer_no = result['day_no']
 		for chat_room in chat_rooms:
-			itchat.send('本期开奖结果：%s' % result, toUserName=chat_room['UserName'])
+			itchat.send('%s期开奖结果：%s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
+	delay_run(answer_refresh_time, show_answer)  # 每分钟更新一次开奖结果
 
 
-def delay_run(delay_time, func, *args):
-	schedule = sched.scheduler()
-	schedule.enter(delay_time, 0, func, *args)
-	schedule.run()
+def get_boss_user_name():
+	global BossUserName
+	if not BossUserName:
+		friends = itchat.search_friends(name=BossName)
+		for friend in friends:
+			BossUserName = friend['UserName']
+			break
+
+	return BossUserName
+
+
+def delay_run(delay_time, func):
+	if delay_time and delay_time > 1:
+		time.sleep(delay_time)
+	func()
 
 
 def get_time():
-	delay_second = None
-	current_second = int(time.time()) - 10  # 提前10秒获取
+	current_second = int(time.time()) + 60  # 提前10秒获取
 	current_second %= 86400
 
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00
-		delay_second = 360
+		delay_second = 600 - (current_second % 600)
 	elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00
-		delay_second = 180
+		delay_second = 300 - (current_second % 300)
+	else:
+		delay_second = ((26 * 3600) - current_second) % 86400  # 10:00 时间差
+
+	print("delay_second : %s" % delay_second)
 	return delay_second
 
 
+def run_threaded(delay_time, func):
+	job_thread = threading.Thread(target=delay_run, args=(delay_time, func))
+	job_thread.start()
 
-itchat.auto_login(hotReload=True)
-itchat.run()
+
+def run():
+	itchat.auto_login(hotReload=True)
+	itchat.run()
+
+
+
