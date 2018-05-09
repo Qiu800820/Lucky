@@ -56,7 +56,7 @@ def open_game():
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s期开盘， 开始打码' % no, toUserName=chat_room['UserName'])
+		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算收盘时间
 	delay_run(get_time(), close_game)
@@ -67,7 +67,7 @@ def close_game():
 	no = get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
-			itchat.send('%s期收盘， 停止打码' % no, toUserName=chat_room['UserName'])
+			itchat.send('%s.. 停止' % no, toUserName=chat_room['UserName'])
 			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
 	if isReceived:
 		# 10秒后开启下期盘口
@@ -83,7 +83,7 @@ def show_answer():
 	if result and chat_rooms and last_answer_no != result['day_no']:
 		last_answer_no = result['day_no']
 		for chat_room in chat_rooms:
-			itchat.send('%s期开奖结果：%s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
+			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
 	delay_run(answer_refresh_time, show_answer)  # 每分钟更新一次开奖结果
 
 
