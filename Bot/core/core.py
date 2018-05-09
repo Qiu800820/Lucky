@@ -1,36 +1,45 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+import json
 import os
 import threading
+
 import itchat
 from itchat.content import *
+
 from Bot.core.fetch import *
 
 isReceived = False
-chatRoomName = '自动时时彩'
-BossName = 'Boss'
 BossUserName = None
 chat_rooms = None
 fetch = Fetch()
 last_answer_no = None
-preview_time = 60  # 提前60秒收盘
-answer_refresh_time = 60
+
 close_game_img = os.path.join(os.path.dirname(__file__), '../resource/close_game.png')
 open_game_img = os.path.join(os.path.dirname(__file__), '../resource/open_game.png')
-print(close_game_img)
-#
-# @itchat.msg_register(TEXT, isGroupChat=True)
-# def received(msg):
-# 	if not isReceived and not msg['isAt']:
-# 		return None
-# 	print(msg)
-# 	# 译码
-# 	if isReceived:  # 打码结果
-# 		# 保存
-# 		# 回复打码成功
-# 		return "用户'%s'打码成功" % msg['ActualNickName']
-# 	else:
-# 		return "， 用户'%s'打码失败" % msg['ActualNickName']
+
+path = os.path.join(os.path.dirname(__file__), '../resource/config.json')
+config = open(path, 'r', -1, 'utf-8').read()
+config = json.loads(config)
+
+chatRoomName = config['chatRoomName']
+BossName = config['BossName']
+preview_time = config['preview_time']  # 提前60秒收盘
+answer_refresh_time = config['answer_refresh_time']
+
+
+@itchat.msg_register(TEXT, isGroupChat=True)
+def received(msg):
+	if not isReceived and not msg['isAt']:
+		return None
+	print(msg)
+	# 译码
+	if isReceived:  # 打码结果
+		# 保存
+		# 回复打码成功
+		return "用户'%s'打码成功" % msg['ActualNickName']
+	else:
+		return "， 用户'%s'打码失败" % msg['ActualNickName']
 
 
 @itchat.msg_register(TEXT)
@@ -48,6 +57,7 @@ def command(msg):
 		close_game()
 
 
+
 def open_game():
 	if not isReceived:
 		return
@@ -56,10 +66,21 @@ def open_game():
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])
+		itchat.send('%s.. 开始 \n财务请加:%s' % (no, ), toUserName=chat_room['UserName'])
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算收盘时间
-	delay_run(get_time(), close_game)
+	delay_run(get_time(), close_hint)
+
+
+def close_hint():
+	print('倒计时')
+	no = get_day_no() + 1
+	if chat_rooms:
+		for chat_room in chat_rooms:
+			itchat.send('%s.. 倒计时30秒' % no, toUserName=chat_room['UserName'])
+			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
+	if isReceived:
+		delay_run(30, close_game)
 
 
 def close_game():
@@ -105,7 +126,7 @@ def delay_run(delay_time, func):
 
 
 def get_time():
-	current_second = int(time.time()) + 60  # 提前10秒获取
+	current_second = int(time.time()) + preview_time - 30
 	current_second %= 86400
 
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00
