@@ -5,12 +5,13 @@ from requests import Session
 
 class Translate:
 
-	def __init__(self, service):
+	def __init__(self, service, params):
 		self.service = service
 		self.session = Session()
 		self.headers = {
 			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36'
 		}
+		self.login(params)
 
 	def login(self, params):
 		url = "%s/Default.aspx" % self.service  # 初始化Cookie
@@ -26,7 +27,23 @@ class Translate:
 			'info': info
 		}
 		response = self.session.post(url, data)
-		return response.text
+		result = response.text
+		number_array = []
+		message = ''
+		validity = True
+		for item in result.split(','):
+			item = item.split('=')
+			money = 1
+			if len(item) > 1:
+				money = item[1]
+			else:
+				message = '未配置金额， 使用默认1元'
+			number_array.append({'number': item[0], 'money': money})
+
+		if len(number_array) == 0:
+			message = result
+			validity = False
+		return validity, number_array, message
 
 
 

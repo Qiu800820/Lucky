@@ -8,6 +8,7 @@ import itchat
 from itchat.content import *
 
 from Bot.core.fetch import *
+from Bot.core.translate import Translate
 
 isReceived = False
 BossUserName = None
@@ -17,7 +18,7 @@ last_answer_no = None
 
 close_game_img = os.path.join(os.path.dirname(__file__), '../resource/close_game.png')
 open_game_img = os.path.join(os.path.dirname(__file__), '../resource/open_game.png')
-
+# 读取配置
 path = os.path.join(os.path.dirname(__file__), '../resource/config.json')
 config = open(path, 'r', -1, 'utf-8').read()
 config = json.loads(config)
@@ -26,6 +27,8 @@ chatRoomName = config['chatRoomName']
 BossName = config['BossName']
 preview_time = config['preview_time']  # 提前60秒收盘
 answer_refresh_time = config['answer_refresh_time']
+# 译码服务
+translate = Translate(config['translate_server'], config['translate_param'])
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)
@@ -33,13 +36,18 @@ def received(msg):
 	if not isReceived and not msg['isAt']:
 		return None
 	print(msg)
-	# 译码
-	if isReceived:  # 打码结果
+	validity, number_array, message = translate.prepare(msg['Content'])
+
+	if not isReceived:
+		return None
+
+	if validity:  # 译码结果
+
 		# 保存
 		# 回复打码成功
-		return "用户'%s'打码成功" % msg['ActualNickName']
+		return "用户'%s' -- xx成功" % msg['ActualNickName']
 	else:
-		return "， 用户'%s'打码失败" % msg['ActualNickName']
+		return "用户'%s' -- xx失败" % msg['ActualNickName']
 
 
 @itchat.msg_register(TEXT)
@@ -57,7 +65,6 @@ def command(msg):
 		close_game()
 
 
-
 def open_game():
 	if not isReceived:
 		return
@@ -66,7 +73,7 @@ def open_game():
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始 \n财务请加:%s' % (no, ), toUserName=chat_room['UserName'])
+		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算收盘时间
 	delay_run(get_time(), close_hint)
