@@ -17,6 +17,7 @@ class DatabaseObject(object):
 		self.db = sqlite3.connect(data_file, check_same_thread=False)
 		self.data_file = data_file
 
+
 	def free(self, cursor):
 		cursor.close()
 
@@ -30,6 +31,9 @@ class DatabaseObject(object):
 
 	def commit(self):
 		self.db.commit()
+
+	def rollback(self):
+		self.db.rollback()
 
 	def read(self, query, values=None):
 		cursor = self.db.cursor()

@@ -7,8 +7,8 @@ import threading
 import itchat
 from itchat.content import *
 
+from Bot.core.db.bot_dao import *
 from Bot.core.fetch import *
-from Bot.core.translate import Translate
 
 isReceived = False
 BossUserName = None
@@ -28,7 +28,7 @@ BossName = config['BossName']
 preview_time = config['preview_time']  # 提前60秒收盘
 answer_refresh_time = config['answer_refresh_time']
 # 译码服务
-translate = Translate(config['translate_server'], config['translate_param'])
+# translate = Translate(config['translate_server'], config['translate_param'])
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)
@@ -36,18 +36,25 @@ def received(msg):
 	if not isReceived and not msg['isAt']:
 		return None
 	print(msg)
-	validity, number_array, message = translate.prepare(msg['Content'])
-
+	validity, number_array, message = (True, [{'number': '1XX2', 'money': 1}], '')  # translate.prepare(msg['Content'])
 	if not isReceived:
 		return None
-
+	current_no = get_day_no(preview_time) + 1
+	message_no = get_day_no(preview_time, msg['time']) + 1
+	if current_no != message_no:
+		validity = False
+		message = '超过有效时间'
 	if validity:  # 译码结果
-
-		# 保存
-		# 回复打码成功
-		return "用户'%s' -- xx成功" % msg['ActualNickName']
+		validity, message = save_user_number(  # 保存
+			number_array,
+			{'userId': msg['UserName'], 'userName': msg['ActualNickName']},
+			message_no,
+			msg['Content']
+		)
+	if validity:
+		return "用户'%s' -- xx成功" % msg['ActualNickName']  # 回复打码成功
 	else:
-		return "用户'%s' -- xx失败" % msg['ActualNickName']
+		return "用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message)
 
 
 @itchat.msg_register(TEXT)
@@ -56,26 +63,32 @@ def command(msg):
 	if not msg['FromUserName'] == get_boss_user_name():
 		return None
 	print(msg)
-	if '开始' in msg['Content']:
+	if '开始' in msg['Content'] and not isReceived:
 		isReceived = True
 		run_threaded(None, open_game)
 		run_threaded(None, show_answer)
 	elif '停止' in msg['Content']:
 		isReceived = False
 		close_game()
+	elif '上分' in msg['Content']:
+		pass  # todo
+	elif '清算' in msg['Content']:
+		pass  # todo
+	elif '查询' in msg['Content']:
+		pass  # todo
 
 
 def open_game():
 	if not isReceived:
 		return
-	print('开盘')
+	print('开始游戏')
 	global chat_rooms
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
 		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
-	# 自动计算收盘时间
+	# 自动计算时间
 	delay_run(get_time(), close_hint)
 
 
@@ -91,14 +104,14 @@ def close_hint():
 
 
 def close_game():
-	print('收盘')
+	print('停止游戏')
 	no = get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
 			itchat.send('%s.. 停止' % no, toUserName=chat_room['UserName'])
 			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
 	if isReceived:
-		# 10秒后开启下期盘口
+		# 10秒后开启下期
 		delay_run(10, open_game)
 
 
@@ -106,13 +119,15 @@ def show_answer():
 	if not isReceived:
 		return
 	global last_answer_no
-	print('开奖')
+	print('公布结果')
 	result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
 	if result and chat_rooms and last_answer_no != result['day_no']:
 		last_answer_no = result['day_no']
 		for chat_room in chat_rooms:
 			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
-	delay_run(answer_refresh_time, show_answer)  # 每分钟更新一次开奖结果
+		# 结算服务
+		# 汇报
+	delay_run(answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
 def get_boss_user_name():
@@ -155,6 +170,3 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login(hotReload=True)
 	itchat.run()
-
-
-
