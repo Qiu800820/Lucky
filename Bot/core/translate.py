@@ -33,13 +33,12 @@ class Translate:
 		validity = True
 		for item in result.split(','):
 			item = item.split('=')
-			money = 1
 			if len(item) > 1:
 				money = item[1]
+				number_array.append({'number': item[0], 'money': money})
 			else:
-				message = '未配置金额， 使用默认1元'
-			number_array.append({'number': item[0], 'money': money})
-
+				message = '未配置金额'
+				break
 		if len(number_array) == 0:
 			message = result
 			validity = False

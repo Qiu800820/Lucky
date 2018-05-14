@@ -4,11 +4,9 @@ import json
 import os
 import threading
 
-import itchat
-from itchat.content import *
-
 from Bot.core.db.bot_dao import *
 from Bot.core.fetch import *
+from Bot.core.mock_itchat import itchat
 
 isReceived = False
 BossUserName = None
@@ -29,27 +27,35 @@ preview_time = config['preview_time']  # 提前60秒收盘
 answer_refresh_time = config['answer_refresh_time']
 # 译码服务
 # translate = Translate(config['translate_server'], config['translate_param'])
+itchat = itchat()
 
 
-@itchat.msg_register(TEXT, isGroupChat=True)
+# @itchat.msg_register(TEXT, isGroupChat=True)
 def received(msg):
 	if not isReceived and not msg['isAt']:
 		return None
+	content = msg['Content'].split('\u2005')
+	if len(content) > 1:
+		content = content[1]
+	else:
+		return None
 	print(msg)
-	validity, number_array, message = (True, [{'number': '1XX2', 'money': 1}], '')  # translate.prepare(msg['Content'])
+
+	validity, number_array, message = (True, [{'number': '1XX2', 'money': 1}], '')  # translate.prepare(content)
 	if not isReceived:
 		return None
 	current_no = get_day_no(preview_time) + 1
-	message_no = get_day_no(preview_time, msg['time']) + 1
+	message_no = get_day_no(preview_time, msg['CreateTime']) + 1
 	if current_no != message_no:
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
 		validity, message = save_user_number(  # 保存
 			number_array,
-			{'userId': msg['UserName'], 'userName': msg['ActualNickName']},
+			msg['ActualNickName'],
+			msg['MsgId'],
 			message_no,
-			msg['Content']
+			content
 		)
 	if validity:
 		return "用户'%s' -- xx成功" % msg['ActualNickName']  # 回复打码成功
@@ -57,7 +63,7 @@ def received(msg):
 		return "用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message)
 
 
-@itchat.msg_register(TEXT)
+# @itchat.msg_register(TEXT)
 def command(msg):
 	global isReceived
 	if not msg['FromUserName'] == get_boss_user_name():
@@ -70,12 +76,20 @@ def command(msg):
 	elif '停止' in msg['Content']:
 		isReceived = False
 		close_game()
-	elif '上分' in msg['Content']:
-		pass  # todo
+	elif '上分' in msg['Content']:  # 上分|名字|5000
+		action, user_name, number = parser(msg['Content'])
+		message = add_user_money(user_name, number, action, msg['MsgId'])
+		return message
 	elif '清算' in msg['Content']:
-		pass  # todo
-	elif '查询' in msg['Content']:
-		pass  # todo
+		_, user_name, number = parser(msg['Content'])
+		message = clear_user(user_name, msg['MsgId'])
+		return message
+	elif '查询积分' in msg['Content']:
+		_, user_name, number = parser(msg['Content'])
+		message = query_user(user_name)
+		return message
+	else:
+		return '支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三'
 
 
 def open_game():
@@ -86,7 +100,7 @@ def open_game():
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])
+		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])  # todo 附加提示
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算时间
 	delay_run(get_time(), close_hint)
@@ -162,6 +176,19 @@ def get_time():
 	return delay_second
 
 
+def parser(message):
+	params = message.split('|')
+	params_len = len(params)
+	action, user_name, number = (None, None, None)
+	if params_len > 0:
+		action = params[0]
+	if params_len > 1:
+		user_name = params[1]
+	if params_len > 2:
+		number = params[2]
+	return action, user_name, number
+
+
 def run_threaded(delay_time, func):
 	job_thread = threading.Thread(target=delay_run, args=(delay_time, func))
 	job_thread.start()
@@ -169,4 +196,4 @@ def run_threaded(delay_time, func):
 
 def run():
 	itchat.auto_login(hotReload=True)
-	itchat.run()
+	itchat.mock_run(received=received, command=command)

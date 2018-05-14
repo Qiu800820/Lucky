@@ -17,7 +17,6 @@ class DatabaseObject(object):
 		self.db = sqlite3.connect(data_file, check_same_thread=False)
 		self.data_file = data_file
 
-
 	def free(self, cursor):
 		cursor.close()
 
