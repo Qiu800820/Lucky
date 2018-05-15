@@ -7,6 +7,7 @@ import threading
 from Bot.core.db.bot_dao import *
 from Bot.core.fetch import *
 from Bot.core.mock_itchat import itchat
+from Bot.core.translate import Translate
 
 isReceived = False
 BossUserName = None
@@ -26,7 +27,7 @@ BossName = config['BossName']
 preview_time = config['preview_time']  # 提前60秒收盘
 answer_refresh_time = config['answer_refresh_time']
 # 译码服务
-# translate = Translate(config['translate_server'], config['translate_param'])
+translate = Translate(config['translate_server'], config['translate_param'])
 itchat = itchat()
 
 
@@ -41,7 +42,7 @@ def received(msg):
 		return None
 	print(msg)
 
-	validity, number_array, message = (True, [{'number': '1XX2', 'money': 1}], '')  # translate.prepare(content)
+	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
 		return None
 	current_no = get_day_no(preview_time) + 1
@@ -139,8 +140,7 @@ def show_answer():
 		last_answer_no = result['day_no']
 		for chat_room in chat_rooms:
 			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
-		# 结算服务
-		# 汇报
+		settlement(result['day_no'], result['number'])
 	delay_run(answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
@@ -162,7 +162,7 @@ def delay_run(delay_time, func):
 
 
 def get_time():
-	current_second = int(time.time()) + preview_time - 30
+	current_second = int(time.time()) + preview_time + 30
 	current_second %= 86400
 
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00
@@ -185,7 +185,7 @@ def parser(message):
 	if params_len > 1:
 		user_name = params[1]
 	if params_len > 2:
-		number = params[2]
+		number = int(params[2])
 	return action, user_name, number
 
 

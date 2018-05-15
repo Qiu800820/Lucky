@@ -55,6 +55,39 @@ mock_data = """{
 	'VoiceLength': 0,
 	'Ticket': ''
 }"""
+msgList = [
+	{
+		'isCommand': True,
+		'MsgId': '8862234331128478280',
+		'Content': '开始',
+		'isAt': False,
+		'FromUserName': 'Boss',
+	},
+	{
+		'isCommand': True,
+		'MsgId': '8862234331128478281',
+		'Content': '上分|Sum|1000',
+		'isAt': False,
+		'FromUserName': 'Boss',
+	},
+	{
+		'isCommand': False,
+		'MsgId': '8862234331128478283',
+		'ActualNickName': 'Sum',
+		'Content': '@Sum\u2005123十百=10',
+		'CreateTime': 1526366058,
+		'isAt': True,
+		'FromUserName': 'Boss',
+	},
+	{
+		'isCommand': True,
+		'MsgId': '8862234331128478282',
+		'Content': '查询积分|Sum',
+		'isAt': False,
+		'FromUserName': 'Boss',
+	}
+]
+
 
 
 class itchat():
@@ -62,18 +95,24 @@ class itchat():
 	def auto_login(self, hotReload):
 		print('账号登陆')
 
-	def search_chatrooms(self):
+	def search_chatrooms(self, name):
 		return [{'UserName': 'SSC'}]
 
 	def send(self, msg, toUserName):
-		print('msg: %s, userName: %s' % msg, toUserName)
+		print('send --> msg: %s, userName: %s' % (msg, toUserName))
 
 	def send_image(self, msg, toUserName):
-		print('image, userName: %s' % msg, toUserName)
+		pass
 
 	def search_friends(self, name):
 		return [{'UserName': 'Boss'}]
 
 	def mock_run(self, received, command):
-		while True:
+		for msg in msgList:
+			if msg['isCommand']:
+				print(command(msg))
+			else:
+				print(received(msg))
 			time.sleep(10)
+		time.sleep(10 * 3600)
+

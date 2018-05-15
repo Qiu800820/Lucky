@@ -34,7 +34,7 @@ class Translate:
 		for item in result.split(','):
 			item = item.split('=')
 			if len(item) > 1:
-				money = item[1]
+				money = int(item[1])
 				number_array.append({'number': item[0], 'money': money})
 			else:
 				message = '未配置金额'
