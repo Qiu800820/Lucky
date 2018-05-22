@@ -68,6 +68,6 @@ def get_day_no(extra_time=0, current_second=None):
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00 -> 24-96
 		no = 24 + int((current_second - 2 * 3600) / 600)
 	elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
-		no = 97 + int((current_second - 14 * 3600) / 300)
+		no = 96 + int((current_second - 14 * 3600) / 300)
 	return no
 

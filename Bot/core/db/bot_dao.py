@@ -152,7 +152,9 @@ def settlement(no, answer):
 			if bingo_odds > 0:
 				user_name = order['user_name']
 				bingo_money = order['money'] * bingo_odds
-				bingo_map.setdefault(user_name, bingo_map.get(user_name, 0) + bingo_money)
+				count_money = bingo_map.get(user_name, 0) + bingo_money
+				bingo_map.setdefault(user_name, count_money)
+				bingo_map[user_name] = count_money
 		if len(bingo_map) > 0:
 			for k in bingo_map:
 				add_user_money(k, bingo_map.get(k), '中奖', '', number='[%s]' % answer, answer_no=no)
@@ -163,6 +165,7 @@ def settlement(no, answer):
 
 
 def get_bingo_odds(answer, user_number):
+	answer = answer.replace(' ', '')
 	size = 4
 	answer = answer[1:]  # 只取4位
 	money = 10000  # 中奖比例
@@ -173,4 +176,6 @@ def get_bingo_odds(answer, user_number):
 			elif user_number[i] != answer[i]:
 				money = 0
 				break
+	else:
+		money = 0
 	return money

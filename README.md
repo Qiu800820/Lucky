@@ -8,3 +8,7 @@
 * 模拟盈利结果
 
 pyinstaller main.py
+
+
+TODO
+昵称不同步

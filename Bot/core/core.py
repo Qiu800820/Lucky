@@ -4,9 +4,11 @@ import json
 import os
 import threading
 
+import itchat
+from itchat.content import *
+
 from Bot.core.db.bot_dao import *
 from Bot.core.fetch import *
-from Bot.core.mock_itchat import itchat
 from Bot.core.translate import Translate
 
 isReceived = False
@@ -15,10 +17,12 @@ chat_rooms = None
 fetch = Fetch()
 last_answer_no = None
 
-close_game_img = os.path.join(os.path.dirname(__file__), '../resource/close_game.png')
-open_game_img = os.path.join(os.path.dirname(__file__), '../resource/open_game.png')
+resource_path = os.path.dirname(__file__)
+print('配置文件路径%s', resource_path)
+close_game_img = os.path.join(resource_path, '../resource/close_game.png')
+open_game_img = os.path.join(resource_path, '../resource/open_game.png')
 # 读取配置
-path = os.path.join(os.path.dirname(__file__), '../resource/config.json')
+path = os.path.join(resource_path, '../resource/config.txt')
 config = open(path, 'r', -1, 'utf-8').read()
 config = json.loads(config)
 
@@ -26,12 +30,12 @@ chatRoomName = config['chatRoomName']
 BossName = config['BossName']
 preview_time = config['preview_time']  # 提前60秒收盘
 answer_refresh_time = config['answer_refresh_time']
+begin_game_hint = config['begin_game_hint']
 # 译码服务
 translate = Translate(config['translate_server'], config['translate_param'])
-itchat = itchat()
 
 
-# @itchat.msg_register(TEXT, isGroupChat=True)
+@itchat.msg_register(TEXT, isGroupChat=True)
 def received(msg):
 	if not isReceived and not msg['isAt']:
 		return None
@@ -64,7 +68,7 @@ def received(msg):
 		return "用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message)
 
 
-# @itchat.msg_register(TEXT)
+@itchat.msg_register(TEXT)
 def command(msg):
 	global isReceived
 	if not msg['FromUserName'] == get_boss_user_name():
@@ -85,10 +89,10 @@ def command(msg):
 		_, user_name, number = parser(msg['Content'])
 		message = clear_user(user_name, msg['MsgId'])
 		return message
-	elif '查询积分' in msg['Content']:
+	elif '查询' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
 		message = query_user(user_name)
-		return message
+		return '剩余积分%s' % message
 	else:
 		return '支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三'
 
@@ -99,9 +103,11 @@ def open_game():
 	print('开始游戏')
 	global chat_rooms
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
+	if not chat_rooms or len(chat_rooms) == 0:
+		print('没有搜索到相关群信息')
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始' % no, toUserName=chat_room['UserName'])  # todo 附加提示
+		itchat.send('%s.. 开始, %s' % (no, begin_game_hint), toUserName=chat_room['UserName'])
 		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算时间
 	delay_run(get_time(), close_hint)
@@ -113,7 +119,6 @@ def close_hint():
 	if chat_rooms:
 		for chat_room in chat_rooms:
 			itchat.send('%s.. 倒计时30秒' % no, toUserName=chat_room['UserName'])
-			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
 	if isReceived:
 		delay_run(30, close_game)
 
@@ -195,5 +200,5 @@ def run_threaded(delay_time, func):
 
 
 def run():
-	itchat.auto_login(hotReload=True)
-	itchat.mock_run(received=received, command=command)
+	itchat.auto_login()
+	itchat.run()
