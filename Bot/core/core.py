@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import json
 import os
+import random
 import threading
 
 import itchat
@@ -12,10 +13,12 @@ from Bot.core.fetch import *
 from Bot.core.translate import Translate
 
 isReceived = False
+isOpenGame = False
 BossUserName = None
 chat_rooms = None
 fetch = Fetch()
 last_answer_no = None
+chats = '!@#$^&*()><:"/'
 
 resource_path = os.path.dirname(__file__)
 print('配置文件路径%s', resource_path)
@@ -35,15 +38,18 @@ begin_game_hint = config['begin_game_hint']
 translate = Translate(config['translate_server'], config['translate_param'])
 
 
-@itchat.msg_register(TEXT, isGroupChat=True)
+@itchat.msg_register(TEXT, isGroupChat=True)  # 打码
 def received(msg):
-	if not isReceived and not msg['isAt']:
+	if not isReceived:
 		return None
-	content = msg['Content'].split('\u2005')
-	if len(content) > 1:
-		content = content[1]
+	if not isOpenGame:
+		return add_random_chat('已停止')
+	if msg['isAt']:
+		content = msg['Content'].split('\u2005')
+		if len(content) > 1:
+			content = content[1]
 	else:
-		return None
+		content = msg['Content']
 	print(msg)
 
 	validity, number_array, message = translate.prepare(content)
@@ -63,9 +69,9 @@ def received(msg):
 			content
 		)
 	if validity:
-		return "用户'%s' -- xx成功" % msg['ActualNickName']  # 回复打码成功
+		return add_random_chat("用户'%s' -- xx成功" % msg['ActualNickName'])  # 回复打码成功
 	else:
-		return "用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message)
+		return add_random_chat("用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message))
 
 
 @itchat.msg_register(TEXT)
@@ -81,34 +87,34 @@ def command(msg):
 	elif '停止' in msg['Content']:
 		isReceived = False
 		close_game()
-	elif '上分' in msg['Content']:  # 上分|名字|5000
+	elif '上分' in msg['Content']:  # 上分|名字|5000  todo 设置备注
 		action, user_name, number = parser(msg['Content'])
 		message = add_user_money(user_name, number, action, msg['MsgId'])
-		return message
+		return add_random_chat(message)
 	elif '清算' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
 		message = clear_user(user_name, msg['MsgId'])
-		return message
+		return add_random_chat(message)
 	elif '查询' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
 		message = query_user(user_name)
-		return '剩余积分%s' % message
+		return add_random_chat('剩余积分%s' % message)
 	else:
-		return '支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三'
+		return add_random_chat('支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三')
 
 
 def open_game():
 	if not isReceived:
 		return
 	print('开始游戏')
-	global chat_rooms
+	global chat_rooms, isOpenGame
 	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
 	if not chat_rooms or len(chat_rooms) == 0:
 		print('没有搜索到相关群信息')
+	isOpenGame = True
 	no = get_day_no(preview_time) + 1
 	for chat_room in chat_rooms:
 		itchat.send('%s.. 开始, %s' % (no, begin_game_hint), toUserName=chat_room['UserName'])
-		itchat.send_image(open_game_img, toUserName=chat_room['UserName'])
 	# 自动计算时间
 	delay_run(get_time(), close_hint)
 
@@ -125,14 +131,15 @@ def close_hint():
 
 def close_game():
 	print('停止游戏')
+	global isOpenGame
+	isOpenGame = False
 	no = get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
 			itchat.send('%s.. 停止' % no, toUserName=chat_room['UserName'])
-			itchat.send_image(close_game_img, toUserName=chat_room['UserName'])
 	if isReceived:
 		# 10秒后开启下期
-		delay_run(10, open_game)
+		delay_run(30, open_game)
 
 
 def show_answer():
@@ -192,6 +199,11 @@ def parser(message):
 	if params_len > 2:
 		number = int(params[2])
 	return action, user_name, number
+
+
+def add_random_chat(msg):
+	random_chat = chats[random.random() * len(chats)]
+	return '%s%s%s' % (msg, random_chat, random_chat)
 
 
 def run_threaded(delay_time, func):

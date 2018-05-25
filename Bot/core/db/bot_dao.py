@@ -145,19 +145,29 @@ def query_user(user_name):
 
 def settlement(no, answer):
 	bingo_map = {}
+	cost_map = {}
 	order_list = orderDao.get_all_by_no(no)
 	if order_list:
 		for order in order_list:
 			bingo_odds = get_bingo_odds(answer, order['number'])
+			user_name = order['user_name']
 			if bingo_odds > 0:
-				user_name = order['user_name']
 				bingo_money = order['money'] * bingo_odds
 				count_money = bingo_map.get(user_name, 0) + bingo_money
 				bingo_map.setdefault(user_name, count_money)
 				bingo_map[user_name] = count_money
+			cost = cost_map.get(user_name, 0) + order['money']
+			cost_map.setdefault(user_name, cost)
+			cost_map[user_name] = cost
 		if len(bingo_map) > 0:
+			count = 0
 			for k in bingo_map:
 				add_user_money(k, bingo_map.get(k), '中奖', '', number='[%s]' % answer, answer_no=no)
+				cost = cost_map.get(k)
+				bingo = bingo_map.get(k)
+				count += (cost - bingo)
+				print('%s.. 打%s.. 中%s.. 赚%s' % (k, cost, bingo, cost - bingo))
+			print('总盈亏%s' % count)
 		else:
 			print('本期没有人中奖')
 	else:
@@ -168,7 +178,7 @@ def get_bingo_odds(answer, user_number):
 	answer = answer.replace(' ', '')
 	size = 4
 	answer = answer[1:]  # 只取4位
-	money = 10000  # 中奖比例
+	money = 10000  # 中奖比例  todo 水位配置
 	if len(answer) == len(user_number):
 		for i in range(size):
 			if user_number[i] == 'X':
