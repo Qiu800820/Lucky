@@ -1,41 +1,38 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-import json
-import os
 import random
+import re
 import threading
+import time
 
 import itchat
 from itchat.content import *
 
-from Bot.core.db.bot_dao import *
-from Bot.core.fetch import *
+from Bot.core.config import Config
+from Bot.core.db.bot_dao import BotDao
+from Bot.core.fetch import Fetch
 from Bot.core.translate import Translate
 
 isReceived = False
 isOpenGame = False
 BossUserName = None
 chat_rooms = None
-fetch = Fetch()
 last_answer_no = None
-chats = '!@#$^&*()><:"/'
-
-resource_path = os.path.dirname(__file__)
-print('配置文件路径%s', resource_path)
-close_game_img = os.path.join(resource_path, '../resource/close_game.png')
-open_game_img = os.path.join(resource_path, '../resource/open_game.png')
-# 读取配置
-path = os.path.join(resource_path, '../resource/config.txt')
-config = open(path, 'r', -1, 'utf-8').read()
-config = json.loads(config)
-
-chatRoomName = config['chatRoomName']
-BossName = config['BossName']
-preview_time = config['preview_time']  # 提前60秒收盘
-answer_refresh_time = config['answer_refresh_time']
-begin_game_hint = config['begin_game_hint']
+# 开奖服务
+fetch = Fetch()
+# 重要配置
+config = Config()
 # 译码服务
-translate = Translate(config['translate_server'], config['translate_param'])
+translate = Translate(config.translate_server, config.translate_param)
+# DAO 服务
+botDao = BotDao(config.odds)
+
+
+@itchat.msg_register(TEXT, isGroupChat=False)  # 私聊打码
+def private_chat(msg):
+	if '识别码' in msg['Content']:
+		return set_alias(msg)
+	return received(msg)
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)  # 打码
@@ -55,13 +52,13 @@ def received(msg):
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
 		return None
-	current_no = get_day_no(preview_time) + 1
-	message_no = get_day_no(preview_time, msg['CreateTime']) + 1
+	current_no = fetch.get_day_no(config.preview_time) + 1
+	message_no = fetch.get_day_no(config.preview_time, msg['CreateTime']) + 1
 	if current_no != message_no:
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
-		validity, message = save_user_number(  # 保存
+		validity, message = botDao.save_user_number(  # 保存
 			number_array,
 			msg['ActualNickName'],
 			msg['MsgId'],
@@ -70,15 +67,32 @@ def received(msg):
 		)
 	if validity:
 		return add_random_chat("用户'%s' -- xx成功" % msg['ActualNickName'])  # 回复打码成功
+	elif '重复订单' in message:
+		return None
 	else:
 		return add_random_chat("用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message))
+
+
+def set_alias(msg):
+	check_code = re.search(r'[0-9]+', msg).group()
+	if len(check_code) > 6:
+		user_id = check_code[6:]
+		code = check_code[0:6]
+		user_name = botDao.get_user_name(user_id, code)
+		if user_name:
+			itchat.set_alias(msg['FromUserName'], user_name)
+			return '识别成功'
+		else:
+			return '识别码错误'
+	else:
+		return '识别码格式错误'
 
 
 @itchat.msg_register(TEXT)
 def command(msg):
 	global isReceived
 	if not msg['FromUserName'] == get_boss_user_name():
-		return None
+		return '无权限'
 	print(msg)
 	if '开始' in msg['Content'] and not isReceived:
 		isReceived = True
@@ -87,17 +101,17 @@ def command(msg):
 	elif '停止' in msg['Content']:
 		isReceived = False
 		close_game()
-	elif '上分' in msg['Content']:  # 上分|名字|5000  todo 设置备注
+	elif '上分' in msg['Content']:  # 上分|名字|5000
 		action, user_name, number = parser(msg['Content'])
-		message = add_user_money(user_name, number, action, msg['MsgId'])
+		message = botDao.add_user_money(user_name, number, action, msg['MsgId'])
 		return add_random_chat(message)
 	elif '清算' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
-		message = clear_user(user_name, msg['MsgId'])
+		message = botDao.clear_user(user_name, msg['MsgId'])
 		return add_random_chat(message)
 	elif '查询' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
-		message = query_user(user_name)
+		message = botDao.query_user(user_name)
 		return add_random_chat('剩余积分%s' % message)
 	else:
 		return add_random_chat('支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三')
@@ -108,20 +122,20 @@ def open_game():
 		return
 	print('开始游戏')
 	global chat_rooms, isOpenGame
-	chat_rooms = itchat.search_chatrooms(name=chatRoomName)
+	chat_rooms = itchat.search_chatrooms(name=config.chatRoomName)
 	if not chat_rooms or len(chat_rooms) == 0:
 		print('没有搜索到相关群信息')
 	isOpenGame = True
-	no = get_day_no(preview_time) + 1
+	no = fetch.get_day_no(config.preview_time) + 1
 	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始, %s' % (no, begin_game_hint), toUserName=chat_room['UserName'])
+		itchat.send('%s.. 开始, %s' % (no, config.begin_game_hint), toUserName=chat_room['UserName'])
 	# 自动计算时间
 	delay_run(get_time(), close_hint)
 
 
 def close_hint():
 	print('倒计时')
-	no = get_day_no() + 1
+	no = fetch.get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
 			itchat.send('%s.. 倒计时30秒' % no, toUserName=chat_room['UserName'])
@@ -133,7 +147,7 @@ def close_game():
 	print('停止游戏')
 	global isOpenGame
 	isOpenGame = False
-	no = get_day_no() + 1
+	no = fetch.get_day_no() + 1
 	if chat_rooms:
 		for chat_room in chat_rooms:
 			itchat.send('%s.. 停止' % no, toUserName=chat_room['UserName'])
@@ -152,14 +166,14 @@ def show_answer():
 		last_answer_no = result['day_no']
 		for chat_room in chat_rooms:
 			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
-		settlement(result['day_no'], result['number'])
-	delay_run(answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
+		botDao.accounting(result['day_no'], result['number'])
+	delay_run(config.answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
 def get_boss_user_name():
 	global BossUserName
 	if not BossUserName:
-		friends = itchat.search_friends(name=BossName)
+		friends = itchat.search_friends(name=config.BossName)
 		for friend in friends:
 			BossUserName = friend['UserName']
 			break
@@ -174,7 +188,7 @@ def delay_run(delay_time, func):
 
 
 def get_time():
-	current_second = int(time.time()) + preview_time + 30
+	current_second = int(time.time()) + config.preview_time + 30
 	current_second %= 86400
 
 	if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00
@@ -197,12 +211,12 @@ def parser(message):
 	if params_len > 1:
 		user_name = params[1]
 	if params_len > 2:
-		number = int(params[2])
+		number = float(params[2])
 	return action, user_name, number
 
 
 def add_random_chat(msg):
-	random_chat = chats[random.random() * len(chats)]
+	random_chat = config.chats[random.random() * len(config.chats)]
 	return '%s%s%s' % (msg, random_chat, random_chat)
 
 
@@ -213,4 +227,5 @@ def run_threaded(delay_time, func):
 
 def run():
 	itchat.auto_login()
+	botDao.review(fetch)  # 对账
 	itchat.run()
