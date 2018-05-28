@@ -55,7 +55,7 @@ class OrderObject(sqlite_db.Table):
 
 	def has_message_id(self, message_id):
 		has = False
-		cursor = self.select('', order_by=None, message_id=message_id)
+		cursor = self.select('message_id', order_by=None, message_id=message_id)
 		result = cursor.fetchone()
 		if result:
 			has = True

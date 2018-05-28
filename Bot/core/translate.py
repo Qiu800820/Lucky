@@ -31,17 +31,20 @@ class Translate:
 		number_array = []
 		message = ''
 		validity = True
-		for item in result.split(','):
-			item = item.split('=')
-			if len(item) > 1:
-				money = float(item[1])
-				number_array.append({'number': item[0], 'money': money})
-			else:
-				message = '未配置金额'
-				break
-		if len(number_array) == 0:
-			message = result
-			validity = False
+		if '<html>' in result:
+			message = '译码错误'
+		else:
+			for item in result.split(','):
+				item = item.split('=')
+				if len(item) > 1:
+					money = float(item[1])
+					number_array.append({'number': item[0], 'money': money})
+				else:
+					message = '未配置金额'
+					break
+			if len(number_array) == 0:
+				message = result
+				validity = False
 		return validity, number_array, message
 
 	def post_number(self):

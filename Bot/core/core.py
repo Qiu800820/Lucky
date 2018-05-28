@@ -12,9 +12,10 @@ from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
 from Bot.core.translate import Translate
+from Bot.core.util import prepare_message_params
 
-isReceived = True
-isOpenGame = True
+isReceived = False
+isOpenGame = False
 BossUserName = None
 chat_rooms = None
 last_answer_no = None
@@ -39,44 +40,45 @@ def private_chat(msg):
 
 @itchat.msg_register(TEXT, isGroupChat=True)  # 打码
 def group_chat(msg):
-	received(msg)
+	return received(msg)
 
 
-def received(msg):  # todo 非好友获取不到备注
+def received(msg):  # TODO 群好友昵称问题
 	if not isReceived:
 		return None
 	if not isOpenGame:
 		return add_random_chat('已停止')
-	if msg.get('isAt'):
-		content = msg['Content'].split('\u2005')
-		if len(content) > 1:
-			content = content[1]
-	else:
-		content = msg['Content']
 	print(msg)
-
+	content, create_time, actual_nick_name, nick_name, msg_id = prepare_message_params(msg)
+	if not nick_name:
+		return add_random_chat('群内不支持打码，请加我好友私聊')
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
 		return None
 	current_no = fetch.get_day_no(config.preview_time) + 1
-	message_no = fetch.get_day_no(config.preview_time, msg['CreateTime']) + 1
+	message_no = fetch.get_day_no(config.preview_time, create_time) + 1
 	if current_no != message_no:
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
 		validity, message = botDao.save_user_number(  # 保存
 			number_array,
-			msg['ActualNickName'],
-			msg['MsgId'],
+			nick_name,
+			msg_id,
 			message_no,
 			content
 		)
 	if validity:
-		return add_random_chat("用户'%s' -- xx成功" % msg['ActualNickName'])  # 回复打码成功
+		return add_random_chat("用户'%s' -- xx成功" % actual_nick_name)  # 回复打码成功
 	elif '重复订单' in message:
 		return None
-	else:
-		return add_random_chat("用户'%s' -- xx失败，原因：%s" % (msg['ActualNickName'], message))
+	return add_random_chat("用户'%s' -- xx失败，原因：%s" % (actual_nick_name, message))
+
+
+@itchat.msg_register(FRIENDS)
+def add_friend(msg):
+	msg.user.verify()
+	msg.user.send('请告诉我你的识别码，以辨别你的身份!(识别码由财务提供)')
 
 
 def set_alias(msg):
