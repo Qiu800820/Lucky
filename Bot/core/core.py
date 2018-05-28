@@ -13,8 +13,8 @@ from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
 from Bot.core.translate import Translate
 
-isReceived = False
-isOpenGame = False
+isReceived = True
+isOpenGame = True
 BossUserName = None
 chat_rooms = None
 last_answer_no = None
@@ -32,16 +32,22 @@ botDao = BotDao(config.odds)
 def private_chat(msg):
 	if '识别码' in msg['Content']:
 		return set_alias(msg)
+	elif msg['FromUserName'] == get_boss_user_name():
+		return command(msg)
 	return received(msg)
 
 
 @itchat.msg_register(TEXT, isGroupChat=True)  # 打码
-def received(msg):
+def group_chat(msg):
+	received(msg)
+
+
+def received(msg):  # todo 非好友获取不到备注
 	if not isReceived:
 		return None
 	if not isOpenGame:
 		return add_random_chat('已停止')
-	if msg['isAt']:
+	if msg.get('isAt'):
 		content = msg['Content'].split('\u2005')
 		if len(content) > 1:
 			content = content[1]
@@ -74,7 +80,7 @@ def received(msg):
 
 
 def set_alias(msg):
-	check_code = re.search(r'[0-9]+', msg).group()
+	check_code = re.search(r'[0-9]+', msg['Content']).group()
 	if len(check_code) > 6:
 		user_id = check_code[6:]
 		code = check_code[0:6]
@@ -88,11 +94,8 @@ def set_alias(msg):
 		return '识别码格式错误'
 
 
-@itchat.msg_register(TEXT)
 def command(msg):
 	global isReceived
-	if not msg['FromUserName'] == get_boss_user_name():
-		return '无权限'
 	print(msg)
 	if '开始' in msg['Content'] and not isReceived:
 		isReceived = True
@@ -216,7 +219,7 @@ def parser(message):
 
 
 def add_random_chat(msg):
-	random_chat = config.chats[random.random() * len(config.chats)]
+	random_chat = config.chats[int(random.random() * len(config.chats))]
 	return '%s%s%s' % (msg, random_chat, random_chat)
 
 
