@@ -16,8 +16,8 @@ from Bot.core.util import prepare_message_params
 
 isReceived = False
 isOpenGame = False
-BossUserName = None
-chat_rooms = None
+BossUserNameList = None
+chat_room_name_list = None
 last_answer_no = None
 # 开奖服务
 fetch = Fetch()
@@ -33,7 +33,7 @@ botDao = BotDao(config.odds)
 def private_chat(msg):
 	if '识别码' in msg['Content']:
 		return set_alias(msg)
-	elif msg['FromUserName'] == get_boss_user_name():
+	elif msg['FromUserName'] in get_boss_user_name():
 		return command(msg)
 	return received(msg)
 
@@ -51,7 +51,9 @@ def received(msg):  # TODO 群好友昵称问题
 	print(msg)
 	content, create_time, actual_nick_name, nick_name, msg_id = prepare_message_params(msg)
 	if not nick_name:
-		return add_random_chat('群内不支持打码，请加我好友私聊')
+		if msg['ToUserName'] in chat_room_name_list:
+			return add_random_chat('群内不支持打码，请加我好友私聊')
+		return None
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
 		return None
@@ -126,24 +128,33 @@ def open_game():
 	if not isReceived:
 		return
 	print('开始游戏')
-	global chat_rooms, isOpenGame
-	chat_rooms = itchat.search_chatrooms(name=config.chatRoomName)
-	if not chat_rooms or len(chat_rooms) == 0:
-		print('没有搜索到相关群信息')
+	global isOpenGame, chat_room_name_list
+	chat_room_name_list = get_chat_room_name_list()
 	isOpenGame = True
 	no = fetch.get_day_no(config.preview_time) + 1
-	for chat_room in chat_rooms:
-		itchat.send('%s.. 开始, %s' % (no, config.begin_game_hint), toUserName=chat_room['UserName'])
+	for chat_room in chat_room_name_list:
+		itchat.send('%s.. 开始, %s' % (no, config.begin_game_hint), toUserName=chat_room)
 	# 自动计算时间
 	delay_run(get_time(), close_hint)
+
+
+def get_chat_room_name_list():
+	name_list = []
+	chat_room_list = itchat.search_chatrooms(name=config.chatRoomName)
+	if not chat_room_list or len(chat_room_list) == 0:
+		print('警告：没有搜索到相关群信息！！！！！！！！！！！！！')
+	else:
+		for chat_room in chat_room_list:
+			name_list.append(chat_room['UserName'])
+	return name_list
 
 
 def close_hint():
 	print('倒计时')
 	no = fetch.get_day_no() + 1
-	if chat_rooms:
-		for chat_room in chat_rooms:
-			itchat.send('%s.. 倒计时30秒' % no, toUserName=chat_room['UserName'])
+	if chat_room_name_list:
+		for chat_room in chat_room_name_list:
+			itchat.send('%s.. 倒计时30秒' % no, toUserName=chat_room)
 	if isReceived:
 		delay_run(30, close_game)
 
@@ -153,9 +164,9 @@ def close_game():
 	global isOpenGame
 	isOpenGame = False
 	no = fetch.get_day_no() + 1
-	if chat_rooms:
-		for chat_room in chat_rooms:
-			itchat.send('%s.. 停止' % no, toUserName=chat_room['UserName'])
+	if chat_room_name_list:
+		for chat_room in chat_room_name_list:
+			itchat.send('%s.. 停止' % no, toUserName=chat_room)
 	if isReceived:
 		# 10秒后开启下期
 		delay_run(30, open_game)
@@ -167,23 +178,25 @@ def show_answer():
 	global last_answer_no
 	print('公布结果')
 	result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
-	if result and chat_rooms and last_answer_no != result['day_no']:
+	if result and chat_room_name_list and last_answer_no != result['day_no']:
 		last_answer_no = result['day_no']
-		for chat_room in chat_rooms:
-			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room['UserName'])
+		for chat_room in chat_room_name_list:
+			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room)
 		botDao.accounting(result['day_no'], result['number'])
 	delay_run(config.answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
 def get_boss_user_name():
-	global BossUserName
-	if not BossUserName:
+	global BossUserNameList
+	if not BossUserNameList:
+		BossUserNameList = []
 		friends = itchat.search_friends(name=config.BossName)
+		if not friends or len(friends) == 0:
+			print('警告：没有搜索到控制者！！！！！！！！！！！！！')
 		for friend in friends:
-			BossUserName = friend['UserName']
-			break
+			BossUserNameList.append(friend['UserName'])
 
-	return BossUserName
+	return BossUserNameList
 
 
 def delay_run(delay_time, func):
@@ -203,7 +216,6 @@ def get_time():
 	else:
 		delay_second = ((26 * 3600) - current_second) % 86400  # 10:00 时间差
 
-	print("delay_second : %s" % delay_second)
 	return delay_second
 
 
@@ -232,5 +244,6 @@ def run_threaded(delay_time, func):
 
 def run():
 	itchat.auto_login()
+	# 初始化配置
 	botDao.review(fetch)  # 对账
 	itchat.run()

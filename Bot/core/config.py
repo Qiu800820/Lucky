@@ -30,6 +30,8 @@ class Config:
 		path = os.path.join(self.resource_path, '../resource/config.txt')
 		with open(path, 'r', -1, 'utf-8') as f:
 			config = f.read()
+			if config.startswith(u'\ufeff'):
+				config = config.encode('utf8')[3:].decode('utf8')
 			config = json.loads(config)
 			self.chatRoomName = config['chatRoomName']
 			self.BossName = config['BossName']
@@ -53,3 +55,5 @@ class Config:
 			config.setdefault('translate_server', self.translate_server)
 			config.setdefault('odds', self.odds)
 			json.dump(config, f)
+
+

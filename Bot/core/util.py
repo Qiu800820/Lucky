@@ -12,8 +12,10 @@ def prepare_message_params(msg):
 	create_time = msg['CreateTime']
 	if msg.get('ActualNickName'):
 		nick_name = actual_nick_name = None
-	else:
+	elif msg.get('User'):
 		nick_name = msg['User']['RemarkName']
 		actual_nick_name = msg['User']['NickName']
+	else:
+		nick_name = actual_nick_name = None
 	msg_id = msg['MsgId']
 	return content, create_time, actual_nick_name, nick_name, msg_id
