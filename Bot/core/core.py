@@ -53,9 +53,11 @@ def received(msg):  # TODO 群好友昵称问题
 	if not nick_name:
 		if msg['ToUserName'] in chat_room_name_list:
 			return add_random_chat('群内不支持打码，请加我好友私聊')
+		print('非自动群、打码消息，直接忽略')
 		return None
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
+		print('控制者已停止程序')
 		return None
 	current_no = fetch.get_day_no(config.preview_time) + 1
 	message_no = fetch.get_day_no(config.preview_time, create_time) + 1
@@ -73,6 +75,7 @@ def received(msg):  # TODO 群好友昵称问题
 	if validity:
 		return add_random_chat("用户'%s' -- xx成功" % actual_nick_name)  # 回复打码成功
 	elif '重复订单' in message:
+		print('用户重复订单, 如果是重新登陆导致的请忽略')
 		return None
 	return add_random_chat("用户'%s' -- xx失败，原因：%s" % (actual_nick_name, message))
 
