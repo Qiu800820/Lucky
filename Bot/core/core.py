@@ -24,7 +24,7 @@ fetch = Fetch()
 # 重要配置
 config = Config()
 # 译码服务
-translate = Translate(config.translate_server, config.translate_param)
+translate = Translate()
 # DAO 服务
 botDao = BotDao(config.odds)
 
@@ -43,7 +43,7 @@ def group_chat(msg):
 	return received(msg)
 
 
-def received(msg):  # TODO 群好友昵称问题
+def received(msg):  # TODO 部分账户无法获取User字段
 	if not isReceived:
 		return None
 	if not isOpenGame:
@@ -246,7 +246,15 @@ def run_threaded(delay_time, func):
 
 
 def run():
+	login()
 	itchat.auto_login()
 	# 初始化配置
 	botDao.review(fetch)  # 对账
 	itchat.run()
+
+
+def login():
+
+	pass
+
+

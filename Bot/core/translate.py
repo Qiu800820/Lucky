@@ -1,38 +1,45 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
-from requests import Session
+import requests
 
 
 class Translate:
 
-	def __init__(self, service, params):
-		self.service = service
-		self.session = Session()
-		self.headers = {
-			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/65.0.3325.181 Safari/537.36'
-		}
-		self.login(params)
+	def __init__(self):
+		self.service = 'https://bc.exsba.com'
+		self.token = None
+		self.check_login()
 
-	def login(self, params):
-		url = "%s/Default.aspx" % self.service  # 初始化Cookie
-		response = self.session.get(url, headers=self.headers)
-		url = "%s/MemberLogin.aspx?%s" % (self.service, params)
-		response = self.session.post(url)
+	def login(self, user_name, password):
+		url = "%s/user/sign/in" % self.service
+		response = requests.post(url, data={"username": user_name, "password": password})
 		print(response.text)
+		login_status = False
+		if response.status_code == 200:
+			self.token = response.json()['token']
+			message = '登陆成功'
+			login_status = True
+		else:
+			message = '登陆失败：%s' % response.text
+		return message, login_status
 
 	def prepare(self, info):
-		url = "%s/weixinImport.aspx" % self.service
+		url = "%s/decode/order" % self.service
+		headers = {
+			'Authorization': self.token
+		}
 		data = {
-			'action': 'CreateData',
 			'info': info
 		}
-		response = self.session.post(url, data)
+		response = requests.post(url, data, headers=headers)
 		result = response.text
+		check_response(result)
 		number_array = []
 		message = ''
 		validity = True
-		if '<html>' in result:
+		if response.status_code != 200 or '<html>' in result:
 			message = '译码错误'
+			validity = False
 		else:
 			for item in result.split(','):
 				item = item.split('=')
@@ -41,6 +48,7 @@ class Translate:
 					number_array.append({'number': item[0], 'money': money})
 				else:
 					message = '未配置金额'
+					validity = False
 					break
 			if len(number_array) == 0:
 				message = result
@@ -50,5 +58,21 @@ class Translate:
 	def post_number(self):
 		pass
 
+	def check_login(self):
+		print('============= 群助手v1 =============\n')
+		print('               登陆                 \n')
+		login_status = False
+		while not login_status:
+			user_name = input('请输入用户名:')
+			password = input('请输入密码:')
+			if user_name and password:
+				message, login_status = self.login(user_name, password)
+			else:
+				message = '账号密码不能为空！'
+			if not login_status:
+				print(message)
 
 
+def check_response(response):
+	if response.status_code == 401:
+		print('警告：登陆过期，请重启程序！！！！')

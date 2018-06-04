@@ -20,8 +20,6 @@ class Config:
 		self.preview_time = None
 		self.answer_refresh_time = None
 		self.begin_game_hint = None
-		self.translate_server = None
-		self.translate_param = None
 		self.odds = default_odds
 		self.load_config()
 
@@ -38,8 +36,6 @@ class Config:
 			self.preview_time = config['preview_time']  # 提前60秒收盘
 			self.answer_refresh_time = config['answer_refresh_time']
 			self.begin_game_hint = config['begin_game_hint']
-			self.translate_server = config['translate_server']
-			self.translate_param = config['translate_param']
 			self.odds = config['odds']
 
 	def save_config(self):
@@ -51,8 +47,6 @@ class Config:
 			config.setdefault('preview_time', self.preview_time)
 			config.setdefault('answer_refresh_time', self.answer_refresh_time)
 			config.setdefault('begin_game_hint', self.begin_game_hint)
-			config.setdefault('translate_param', self.translate_param)
-			config.setdefault('translate_server', self.translate_server)
 			config.setdefault('odds', self.odds)
 			json.dump(config, f)
 
