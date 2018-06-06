@@ -2,6 +2,8 @@
 # -*- coding: UTF-8 -*-
 import requests
 
+from Bot.core.encrypted import Encryption
+
 
 class Translate:
 
@@ -9,10 +11,17 @@ class Translate:
 		self.service = 'https://bc.exsba.com'
 		self.token = None
 		self.check_login()
+		self.encryption = Encryption()
 
-	def login(self, user_name, password):
+	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service
-		response = requests.post(url, data={"username": user_name, "password": password})
+		response = requests.post(
+			url,
+			data={
+				"username": py_user, "password": py_psw,
+				"ssc_username": ssc_user, "ssc_password": ssc_psw
+			}
+		)
 		print(response.text)
 		login_status = False
 		if response.status_code == 200:
@@ -32,8 +41,8 @@ class Translate:
 			'info': info
 		}
 		response = requests.post(url, data, headers=headers)
-		result = response.text
-		check_response(result)
+		check_response(response)
+		result = response.json()['data']
 		number_array = []
 		message = ''
 		validity = True
@@ -55,18 +64,40 @@ class Translate:
 				validity = False
 		return validity, number_array, message
 
-	def post_number(self):
-		pass
+	def post_number(self, number_array):
+		info_array = []
+		for number in number_array:
+			info_array.append('%s|%s' % (number['number'], number['money']))
+		info = ','.join(info_array)
+		print('下单 info:%s' % info)
+		url = "%s/make/order" % self.service
+		headers = {
+			'Authorization': self.token
+		}
+		data = {
+			'info': info
+		}
+		message = ''
+		validity = False
+		response = requests.post(url, data, headers=headers)
+		check_response(response)
+		if response.status_code != 200:
+			message = response.text
+		else:
+			validity = True
+		return validity, message
 
 	def check_login(self):
 		print('============= 群助手v1 =============\n')
 		print('               登陆                 \n')
 		login_status = False
 		while not login_status:
-			user_name = input('请输入用户名:')
-			password = input('请输入密码:')
-			if user_name and password:
-				message, login_status = self.login(user_name, password)
+			py_user = input('请输入软件用户名:')
+			py_psw = input('请输入软件密码:')
+			ssc_user = input('请输入平台用户名:')
+			ssc_psw = input('请输入平台密码:')
+			if py_user and py_psw and ssc_user and ssc_psw:
+				message, login_status = self.login(py_user, py_psw, ssc_user, ssc_psw)
 			else:
 				message = '账号密码不能为空！'
 			if not login_status:

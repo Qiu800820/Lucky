@@ -51,7 +51,7 @@ def received(msg):  # TODO 部分账户无法获取User字段
 	print(msg)
 	content, create_time, actual_nick_name, nick_name, msg_id = prepare_message_params(msg)
 	if not nick_name:
-		if msg['ToUserName'] in chat_room_name_list:
+		if msg['FromUserName'] in chat_room_name_list:
 			return add_random_chat('群内不支持打码，请加我好友私聊')
 		print('非自动群、打码消息，直接忽略')
 		return None
@@ -72,6 +72,8 @@ def received(msg):  # TODO 部分账户无法获取User字段
 			message_no,
 			content
 		)
+	if validity:  # 保存成功
+		validity, message = translate.post_number(number_array)
 	if validity:
 		return add_random_chat("用户'%s' -- xx成功" % actual_nick_name)  # 回复打码成功
 	elif '重复订单' in message:
@@ -113,7 +115,7 @@ def command(msg):
 		close_game()
 	elif '上分' in msg['Content']:  # 上分|名字|5000
 		action, user_name, number = parser(msg['Content'])
-		message = botDao.add_user_money(user_name, number, action, msg['MsgId'])
+		message = botDao.add_user_money(user_name, float(number), action, msg['MsgId'])
 		return add_random_chat(message)
 	elif '清算' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
@@ -123,6 +125,11 @@ def command(msg):
 		_, user_name, number = parser(msg['Content'])
 		message = botDao.query_user(user_name)
 		return add_random_chat('剩余积分%s' % message)
+	elif '打码' in msg['Content']:
+		_, user_name, number = parser(msg['Content'])
+		msg['User']['RemarkName'] = user_name
+		msg['User']['NickName'] = user_name
+		return received(msg)
 	else:
 		return add_random_chat('支持命令:\n开始\n停止\n上分|张三|1000\n清算|张三\n查询|张三')
 
@@ -180,18 +187,22 @@ def show_answer():
 		return
 	global last_answer_no
 	print('公布结果')
-	result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
+	result, history_result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
 	if result and chat_room_name_list and last_answer_no != result['day_no']:
 		last_answer_no = result['day_no']
+		message = []
+		for item in history_result:
+			message.append('%s.. %s' % (item['day_no'], item['number']))
+		message = '\n'.join(message)
 		for chat_room in chat_room_name_list:
-			itchat.send('%s.. %s' % (result['day_no'], result['number']), toUserName=chat_room)
+			itchat.send(message, toUserName=chat_room)
 		botDao.accounting(result['day_no'], result['number'])
 	delay_run(config.answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
-def get_boss_user_name():
+def get_boss_user_name(refresh=False):
 	global BossUserNameList
-	if not BossUserNameList:
+	if not BossUserNameList or refresh:
 		BossUserNameList = []
 		friends = itchat.search_friends(name=config.BossName)
 		if not friends or len(friends) == 0:
@@ -231,7 +242,7 @@ def parser(message):
 	if params_len > 1:
 		user_name = params[1]
 	if params_len > 2:
-		number = float(params[2])
+		number = params[2]
 	return action, user_name, number
 
 
@@ -246,15 +257,10 @@ def run_threaded(delay_time, func):
 
 
 def run():
-	login()
 	itchat.auto_login()
 	# 初始化配置
 	botDao.review(fetch)  # 对账
 	itchat.run()
 
-
-def login():
-
-	pass
 
 

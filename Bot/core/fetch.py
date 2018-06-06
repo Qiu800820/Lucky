@@ -9,7 +9,7 @@ from lxml import etree
 class Fetch:
 
 	# 获取最新开奖记录
-	def query_answer(self, no=None):
+	def query_answer(self, no=None, size=10):
 		result = None
 		if not no:
 			no = self.get_day_no()
@@ -20,26 +20,31 @@ class Fetch:
 		items = self.__query_answer_163(day=day)
 		for item in items:
 			if int(item['day_no']) == no:
-				return item
+				return item, items[-size:]
 
 		items = self.__query_award_360(day=day)
 		for item in items:
 			if int(item['day_no']) == no:
-				return item
+				return item, items[-size:]
 		return None
 
 	#  加载某一天开奖结果
 	def __query_answer_163(self, day):
 		print('加载%s内容' % day)
+		items = []
 		response = requests.get('http://caipiao.163.com/award/cqssc/%s.html' % day)
 		response = etree.HTML(response.text)
 		td_list = response.xpath("//table/tr/td[contains(@class, 'start')]")
 		for td in td_list:
 			number = td.xpath("@data-win-number")
 			if number and len(number) > 0 and len(number[0]) > 1:
-				yield {'number': number[0], 'no': td.xpath("@data-period")[0], 'day_no': td.xpath("text()")[0]}
+				items.append({'number': number[0], 'no': td.xpath("@data-period")[0], 'day_no': td.xpath("text()")[0]})
+		if len(items) > 0:
+			items = sorted(items, key=lambda item: item['day_no'])
+		return items
 
 	def __query_award_360(self, day):
+		items = []
 		print('加载%s内容' % day)
 		format_day = '%s-%s-%s' % (day[:4], day[4:6], day[6:8])
 		response = requests.get('http://chart.cp.360.cn/kaijiang/kaijiang?lotId=255401&spanType=2&span=%s_%s' % (format_day, format_day))
@@ -50,7 +55,10 @@ class Fetch:
 			no = day[2:] + day_no
 			number = td.xpath("text()")[0]
 			if number:
-				yield {'number': number, 'no': no, 'day_no': day_no}
+				items.append({'number': number, 'no': no, 'day_no': day_no})
+		if len(items) > 0:
+			items = sorted(items, key=lambda item: item['day_no'])
+		return items
 
 	def get_format_day(self):
 		current_second = int(time.time())
