@@ -49,27 +49,27 @@ msgList = [
 ]
 
 
-def auto_login(self):
+def auto_login():
 	print('账号登陆')
 
 
-def search_chatrooms(self, name):
+def search_chatrooms(name):
 	return [{'UserName': 'SSC', 'NickName': '自动1'}]
 
 
-def send(self, msg, toUserName):
+def send(msg, toUserName):
 	print('send --> msg: %s, userName: %s' % (msg, toUserName))
 
 
-def send_image(self, msg, toUserName):
+def send_image(msg, toUserName):
 	pass
 
 
-def search_friends(self, name):
+def search_friends(name):
 	return [{'UserName': 'Boss'}]
 
 
-def run(self, private_chat, group_chat, add_friend):
+def run(private_chat, group_chat, add_friend):
 	for msg in msgList:
 		if msg['Type'] == PRIVATE_CHAT:
 			print(private_chat(msg))
@@ -81,5 +81,5 @@ def run(self, private_chat, group_chat, add_friend):
 	time.sleep(10 * 3600)
 
 
-def set_alias(self, param, user_name):
+def set_alias(param, user_name):
 	pass

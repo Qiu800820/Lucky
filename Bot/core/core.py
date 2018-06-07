@@ -8,11 +8,11 @@ import time
 from itchat import msg_register
 from itchat.content import *
 
+from Bot.core import itchat
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
 from Bot.core.log import Log
-from Bot.core.mock_itchat import itchat
 from Bot.core.translate import Translate
 from Bot.core.util import prepare_message_params
 
