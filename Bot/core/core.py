@@ -27,7 +27,7 @@ fetch = Fetch()
 # 重要配置
 config = Config()
 # 译码服务
-translate = Translate()
+translate = Translate(config)
 # DAO 服务
 botDao = BotDao(config.odds, log)
 
@@ -77,7 +77,7 @@ def received(msg):  # TODO 部分账户无法获取User字段
 		return None
 	current_no = fetch.get_day_no(config.preview_time) + 1
 	message_no = fetch.get_day_no(config.preview_time, create_time) + 1
-	if current_no != message_no:
+	if current_no != message_no or not isOpenGame:
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
@@ -91,7 +91,7 @@ def received(msg):  # TODO 部分账户无法获取User字段
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
 	if validity:
-		reply_message = "用户'%s' -- xx成功" % actual_nick_name
+		reply_message = "用户'%s' -- %sxx成功" % (message_no, actual_nick_name)
 		log.debug('received <<- message:%s', reply_message)
 		return add_random_chat(reply_message)  # 回复打码成功
 	elif '重复订单' in message:
@@ -110,8 +110,6 @@ def add_friend(msg):
 		msg.user.send('请告诉我你的识别码，以辨别你的身份!(识别码由财务提供)')
 	except Exception:
 		log.error('group_chat', exc_info=True)
-		message = None
-	return message
 
 
 def set_alias(msg):
@@ -305,7 +303,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	itchat.run()
+	itchat.run(private_chat, group_chat, add_friend)
+
 
 
 

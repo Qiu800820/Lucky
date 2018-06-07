@@ -12,7 +12,7 @@ class Fetch:
 	def query_answer(self, no=None, size=10):
 		result = None
 		if not no:
-			no = self.get_day_no()
+			no = str(self.get_day_no())
 		if not no:
 			return result
 
@@ -26,7 +26,7 @@ class Fetch:
 		for item in items:
 			if item['no'] == no:
 				return item, items[-size:]
-		return None
+		return None, None
 
 	#  加载某一天开奖结果
 	def __query_answer_163(self, day):
@@ -74,6 +74,18 @@ class Fetch:
 			no = 24 + int((current_second - 2 * 3600) / 600)
 		elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
 			no = 96 + int((current_second - 14 * 3600) / 300)
-		no = time.strftime('%y%m%d', time.localtime()) + no
+		no = int(time.strftime('%y%m%d', time.localtime())) * 1000 + no
 		return no
 
+
+def test():
+	fetch = Fetch()
+	for i in range(60):
+		second = int(time.time()) + (i * 10)
+		print(fetch.get_day_no(60, second), time.asctime(time.localtime(second)))
+	second = 1528381140
+	print(fetch.get_day_no(60, second), time.asctime(time.localtime(second)))
+
+
+if __name__ == '__main__':
+	test()

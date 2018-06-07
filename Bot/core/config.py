@@ -21,6 +21,7 @@ class Config:
 		self.answer_refresh_time = None
 		self.begin_game_hint = None
 		self.odds = default_odds
+		self.token = None
 		self.load_config()
 
 	def load_config(self):
@@ -37,10 +38,11 @@ class Config:
 			self.answer_refresh_time = config['answer_refresh_time']
 			self.begin_game_hint = config['begin_game_hint']
 			self.odds = config['odds']
+			self.token = config['token']
 
 	def save_config(self):
 		path = os.path.join(self.resource_path, '../resource/config.txt')
-		with open(path, 'w') as f:
+		with open(path, 'w', -1, 'utf-8') as f:
 			config = {}
 			config.setdefault('chatRoomName', self.chatRoomName)
 			config.setdefault('BossName', self.BossName)
@@ -48,6 +50,7 @@ class Config:
 			config.setdefault('answer_refresh_time', self.answer_refresh_time)
 			config.setdefault('begin_game_hint', self.begin_game_hint)
 			config.setdefault('odds', self.odds)
-			json.dump(config, f)
+			config.setdefault('token', self.token)
+			json.dump(config, f, ensure_ascii=False)
 
 

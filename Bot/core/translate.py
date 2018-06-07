@@ -7,9 +7,10 @@ from Bot.core.encrypted import Encryption
 
 class Translate:
 
-	def __init__(self):
+	def __init__(self, config):
 		self.service = 'https://bc.exsba.com'
-		self.token = None
+		self.config = config
+		self.token = config.token
 		self.encryption = Encryption()
 		self.check_login()
 
@@ -25,6 +26,7 @@ class Translate:
 		login_status = False
 		if response.status_code == 200:
 			self.token = response.json()['token']
+			self.config.token = self.token
 			message = '登陆成功'
 			login_status = True
 		else:
@@ -40,7 +42,7 @@ class Translate:
 			'info': info
 		}
 		response = requests.post(url, data, headers=headers)
-		check_response(response)
+		self.check_response(response)
 		result = response.json()['data']
 		number_array = []
 		message = ''
@@ -78,7 +80,7 @@ class Translate:
 		message = ''
 		validity = False
 		response = requests.post(url, data, headers=headers)
-		check_response(response)
+		self.check_response(response)
 		if response.status_code != 200:
 			message = response.text
 		else:
@@ -86,6 +88,8 @@ class Translate:
 		return validity, message
 
 	def check_login(self):
+		if self.token and len(self.token) > 1:
+			return None
 		print('============= 群助手v1 =============\n')
 		print('               登陆                 \n')
 		login_status = False
@@ -101,8 +105,12 @@ class Translate:
 				message = '账号密码不能为空！'
 			if not login_status:
 				print(message)
+		self.config.save_config()
+
+	def check_response(self, response):
+		if response.status_code == 401:
+			self.config.token = ""
+			self.config.save_config()
+			print('警告：登陆过期，请重启程序！！！！')
 
 
-def check_response(response):
-	if response.status_code == 401:
-		print('警告：登陆过期，请重启程序！！！！')
