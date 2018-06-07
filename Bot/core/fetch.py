@@ -16,21 +16,20 @@ class Fetch:
 		if not no:
 			return result
 
-		day = self.get_format_day()
+		day = self.get_format_day()[:2] + no[:6]
 		items = self.__query_answer_163(day=day)
 		for item in items:
-			if int(item['day_no']) == no:
+			if item['no'] == no:
 				return item, items[-size:]
 
 		items = self.__query_award_360(day=day)
 		for item in items:
-			if int(item['day_no']) == no:
+			if item['no'] == no:
 				return item, items[-size:]
 		return None
 
 	#  加载某一天开奖结果
 	def __query_answer_163(self, day):
-		print('加载%s内容' % day)
 		items = []
 		response = requests.get('http://caipiao.163.com/award/cqssc/%s.html' % day)
 		response = etree.HTML(response.text)
@@ -45,7 +44,6 @@ class Fetch:
 
 	def __query_award_360(self, day):
 		items = []
-		print('加载%s内容' % day)
 		format_day = '%s-%s-%s' % (day[:4], day[4:6], day[6:8])
 		response = requests.get('http://chart.cp.360.cn/kaijiang/kaijiang?lotId=255401&spanType=2&span=%s_%s' % (format_day, format_day))
 		response = etree.HTML(response.text)
@@ -76,5 +74,6 @@ class Fetch:
 			no = 24 + int((current_second - 2 * 3600) / 600)
 		elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
 			no = 96 + int((current_second - 14 * 3600) / 300)
+		no = time.strftime('%y%m%d', time.localtime()) + no
 		return no
 

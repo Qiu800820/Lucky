@@ -5,12 +5,14 @@ import re
 import threading
 import time
 
-import itchat
+from itchat import msg_register
 from itchat.content import *
 
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
+from Bot.core.log import Log
+from Bot.core.mock_itchat import itchat
 from Bot.core.translate import Translate
 from Bot.core.util import prepare_message_params
 
@@ -19,6 +21,7 @@ isOpenGame = False
 BossUserNameList = None
 chat_room_name_list = None
 last_answer_no = None
+log = Log()
 # 开奖服务
 fetch = Fetch()
 # 重要配置
@@ -26,38 +29,51 @@ config = Config()
 # 译码服务
 translate = Translate()
 # DAO 服务
-botDao = BotDao(config.odds)
+botDao = BotDao(config.odds, log)
 
 
-@itchat.msg_register(TEXT, isGroupChat=False)  # 私聊打码
+@msg_register(TEXT, isGroupChat=False)  # 私聊打码
 def private_chat(msg):
-	if '识别码' in msg['Content']:
-		return set_alias(msg)
-	elif msg['FromUserName'] in get_boss_user_name():
-		return command(msg)
-	return received(msg)
+	try:
+		if '识别码' in msg['Content']:
+			message = set_alias(msg)
+		elif msg['FromUserName'] in get_boss_user_name():
+			message = command(msg)
+		else:
+			message = received(msg)
+	except Exception:
+		log.error('private_chat', exc_info=True)
+		message = None
+	return message
 
 
-@itchat.msg_register(TEXT, isGroupChat=True)  # 打码
+@msg_register(TEXT, isGroupChat=True)  # 打码
 def group_chat(msg):
-	return received(msg)
+	try:
+		message = received(msg)
+	except Exception:
+		log.error('group_chat', exc_info=True)
+		message = None
+	return message
 
 
 def received(msg):  # TODO 部分账户无法获取User字段
+	log.debug('received ->> message:%s', msg)
 	if not isReceived:
 		return None
 	if not isOpenGame:
+		log.warning('已停止')
 		return add_random_chat('已停止')
-	print(msg)
 	content, create_time, actual_nick_name, nick_name, msg_id = prepare_message_params(msg)
 	if not nick_name:
 		if msg['FromUserName'] in chat_room_name_list:
+			log.debug('群内不支持打码，请加我好友私聊')
 			return add_random_chat('群内不支持打码，请加我好友私聊')
-		print('非自动群、打码消息，直接忽略')
+		log.debug('非自动群、打码消息，直接忽略')
 		return None
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
-		print('控制者已停止程序')
+		log.warning('控制者已停止程序')
 		return None
 	current_no = fetch.get_day_no(config.preview_time) + 1
 	message_no = fetch.get_day_no(config.preview_time, create_time) + 1
@@ -75,20 +91,31 @@ def received(msg):  # TODO 部分账户无法获取User字段
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
 	if validity:
-		return add_random_chat("用户'%s' -- xx成功" % actual_nick_name)  # 回复打码成功
+		reply_message = "用户'%s' -- xx成功" % actual_nick_name
+		log.debug('received <<- message:%s', reply_message)
+		return add_random_chat(reply_message)  # 回复打码成功
 	elif '重复订单' in message:
-		print('用户重复订单, 如果是重新登陆导致的请忽略')
+		log.warning('用户重复订单, 如果是重新登陆导致的请忽略')
 		return None
-	return add_random_chat("用户'%s' -- xx失败，原因：%s" % (actual_nick_name, message))
+	reply_message = "用户'%s' -- xx失败，原因：%s" % (actual_nick_name, message)
+	log.debug('received <<- message:%s', reply_message)
+	return add_random_chat(reply_message)
 
 
-@itchat.msg_register(FRIENDS)
+@msg_register(FRIENDS)
 def add_friend(msg):
-	msg.user.verify()
-	msg.user.send('请告诉我你的识别码，以辨别你的身份!(识别码由财务提供)')
+	try:
+		log.debug('add_friend ->> message:%s', msg)
+		msg.user.verify()
+		msg.user.send('请告诉我你的识别码，以辨别你的身份!(识别码由财务提供)')
+	except Exception:
+		log.error('group_chat', exc_info=True)
+		message = None
+	return message
 
 
 def set_alias(msg):
+	log.debug('set_alias ->> msg:%s' % msg)
 	check_code = re.search(r'[0-9]+', msg['Content']).group()
 	if len(check_code) > 6:
 		user_id = check_code[6:]
@@ -96,37 +123,48 @@ def set_alias(msg):
 		user_name = botDao.get_user_name(user_id, code)
 		if user_name:
 			itchat.set_alias(msg['FromUserName'], user_name)
-			return '识别成功'
+			message = '识别成功'
 		else:
-			return '识别码错误'
+			message = '识别码错误'
 	else:
-		return '识别码格式错误'
+		message = '识别码格式错误'
+	log.debug('set_alias <<- message:%s' % message)
+	return message
 
 
 def command(msg):
 	global isReceived
-	print(msg)
+	log.debug('command ->> msg: %s' % msg)
 	if '开始' in msg['Content'] and not isReceived:
+		log.debug('command ->> 开始')
 		isReceived = True
 		run_threaded(None, open_game)
 		run_threaded(None, show_answer)
 	elif '停止' in msg['Content']:
+		log.debug('command ->> 停止')
 		isReceived = False
 		close_game()
 	elif '上分' in msg['Content']:  # 上分|名字|5000
 		action, user_name, number = parser(msg['Content'])
+		log.debug('command ->> 上分 user_name:%s, number:%s', user_name, number)
 		message = botDao.add_user_money(user_name, float(number), action, msg['MsgId'])
+		log.debug('command ->> message:%s', message)
 		return add_random_chat(message)
 	elif '清算' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
+		log.debug('command ->> 清算 user_name:%s', user_name)
 		message = botDao.clear_user(user_name, msg['MsgId'])
+		log.debug('command ->> message:%s', message)
 		return add_random_chat(message)
 	elif '查询' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
+		log.debug('command ->> 查询 user_name:%s', user_name)
 		message = botDao.query_user(user_name)
+		log.debug('command ->> message:剩余积分%s', message)
 		return add_random_chat('剩余积分%s' % message)
 	elif '打码' in msg['Content']:
 		_, user_name, number = parser(msg['Content'])
+		log.debug('command ->> 打码 user_name:%s number:%s', user_name, number)
 		msg['User']['RemarkName'] = user_name
 		msg['User']['NickName'] = user_name
 		return received(msg)
@@ -137,7 +175,7 @@ def command(msg):
 def open_game():
 	if not isReceived:
 		return
-	print('开始游戏')
+	log.info('开始游戏')
 	global isOpenGame, chat_room_name_list
 	chat_room_name_list = get_chat_room_name_list()
 	isOpenGame = True
@@ -150,17 +188,21 @@ def open_game():
 
 def get_chat_room_name_list():
 	name_list = []
+	nick_name_list = []
 	chat_room_list = itchat.search_chatrooms(name=config.chatRoomName)
 	if not chat_room_list or len(chat_room_list) == 0:
-		print('警告：没有搜索到相关群信息！！！！！！！！！！！！！')
+		log.warning('警告：没有搜索到相关群信息！！！！！！！！！！！！！')
 	else:
 		for chat_room in chat_room_list:
 			name_list.append(chat_room['UserName'])
+			nick_name_list.append(chat_room['NickName'])
+		log.info('自动群：%s', nick_name_list)
+
 	return name_list
 
 
 def close_hint():
-	print('倒计时')
+	log.info('倒计时')
 	no = fetch.get_day_no() + 1
 	if chat_room_name_list:
 		for chat_room in chat_room_name_list:
@@ -170,7 +212,7 @@ def close_hint():
 
 
 def close_game():
-	print('停止游戏')
+	log.info('停止游戏')
 	global isOpenGame
 	isOpenGame = False
 	no = fetch.get_day_no() + 1
@@ -186,27 +228,31 @@ def show_answer():
 	if not isReceived:
 		return
 	global last_answer_no
-	print('公布结果')
 	result, history_result = fetch.query_answer()  # None or {'number', 'no', 'day_no'}
-	if result and chat_room_name_list and last_answer_no != result['day_no']:
-		last_answer_no = result['day_no']
+	if result and chat_room_name_list and last_answer_no != result['no']:
+		last_answer_no = result['no']
+		log.info('公布结果%s', last_answer_no)
 		message = []
 		for item in history_result:
-			message.append('%s.. %s' % (item['day_no'], item['number']))
+			message.append('%s.. %s' % (item['no'], item['number']))
 		message = '\n'.join(message)
+		log.debug('show_answer ->> message: %s', message)
 		for chat_room in chat_room_name_list:
 			itchat.send(message, toUserName=chat_room)
-		botDao.accounting(result['day_no'], result['number'])
+		botDao.accounting(result['no'], result['number'])
 	delay_run(config.answer_refresh_time, show_answer)  # 每段时间更新一次开奖结果
 
 
 def get_boss_user_name(refresh=False):
+	log.debug('get_boss_user_name ->>')
 	global BossUserNameList
 	if not BossUserNameList or refresh:
 		BossUserNameList = []
 		friends = itchat.search_friends(name=config.BossName)
 		if not friends or len(friends) == 0:
-			print('警告：没有搜索到控制者！！！！！！！！！！！！！')
+			log.warning('警告：没有搜索到控制者！！！！！！！！！！！！！')
+		else:
+			log.debug('控制者: %s', friends)
 		for friend in friends:
 			BossUserNameList.append(friend['UserName'])
 
@@ -229,7 +275,7 @@ def get_time():
 		delay_second = 300 - (current_second % 300)
 	else:
 		delay_second = ((26 * 3600) - current_second) % 86400  # 10:00 时间差
-
+	log.debug('get_time <<- delay_second:%s', delay_second)
 	return delay_second
 
 
@@ -258,7 +304,6 @@ def run_threaded(delay_time, func):
 
 def run():
 	itchat.auto_login()
-	# 初始化配置
 	botDao.review(fetch)  # 对账
 	itchat.run()
 

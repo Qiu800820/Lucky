@@ -1,15 +1,17 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import random
-from Bot.core.db import sqlite_db
+import time
+
 from Bot.core.config import default_odds
+from Bot.core.db import sqlite_db
 
 
 class OrderObject(sqlite_db.Table):
 	def __init__(self):
 		super(OrderObject, self).__init__("./resource/bot.db", "OddsOrder", [
 			'number TEXT', 'message_id TEXT', 'user_name TEXT', 'money NUMBER', 'no TEXT', 'number_abb TEXT',
-			'type NUMBER', 'accounting NUMBER'
+			'type NUMBER', 'accounting NUMBER', 'create_time TEXT'
 		])
 
 	def insert(self, *args):
@@ -33,7 +35,7 @@ class OrderObject(sqlite_db.Table):
 	def get_all_accounting_by_no(self, no):
 		cursor = self.select(
 			'number', 'user_name', 'money', 'message_id',
-			order_by=None, no=int(no), type=1, accounting=1
+			order_by=None, no=no, type=1, accounting=1
 		)
 		result = []
 		order = cursor.fetchone()
@@ -130,14 +132,19 @@ class UserObject(sqlite_db.Table):
 
 class BotDao:
 
-	def __init__(self, odds_config):
+	def __init__(self, odds_config, log):
 		self.orderDao = OrderObject()
 		self.userDao = UserObject()
 		if not odds_config or len(odds_config) != 4:
 			odds_config = default_odds
 		self.odds_config = odds_config
+		self.log = log
 
 	def save_user_number(self, number_array, user_name, message_id, no, number_abb):
+		self.log.debug(
+			'save_user_number ->> number_array:%s, user_name:%s, message_id:%s, no:%s, number_abb:%s',
+			number_array, user_name, message_id, no, number_abb
+		)
 		if not (number_array and user_name and message_id and no and number_abb):
 			return False, '信息有误'
 		if self.orderDao.has_message_id(message_id):
@@ -145,8 +152,9 @@ class BotDao:
 		else:
 			user = self.userDao.get_user(user_name)
 			consume = 0
+			date_str = time.strftime('%F')
 			for number in number_array:
-				self.orderDao.insert(number['number'], message_id, user_name, number['money'], no, number_abb, 1, 1)
+				self.orderDao.insert(number['number'], message_id, user_name, number['money'], no, number_abb, 1, 1, date_str)
 				consume += number['money']
 			if not user or user['money'] < consume:
 				self.orderDao.rollback()
@@ -157,30 +165,45 @@ class BotDao:
 				return True, '下单成功'
 
 	def add_user_money(self, user_name, money, source, message_id, number='', answer_no=''):
+		self.log.debug(
+			'add_user_money ->> user_name:%s, money:%s, source:%s, message_id:%s, number:%s, answer_no:%s',
+			user_name, money, source, message_id, number, answer_no
+		)
 		if not (user_name and money):
 			return '用户或金额数据错误'
 		user = self.userDao.add_user_money(user_name, money)
-		self.orderDao.insert(number, message_id, user_name, money, answer_no, source, 0, 0)
+		self.orderDao.insert(number, message_id, user_name, money, answer_no, source, 0, 0, time.strftime("%F"))
 		self.orderDao.commit()
 		message = '上分成功, 识别码:%s%s 第一次下单的用户 需要先把识别码发给机器人' % (user['code'], user['user_id'])
 		return message
 
 	def get_user_name(self, user_id, code):
+		self.log.debug(
+			'get_user_name ->> user_id:%s, code:%s',
+			user_id, code
+		)
 		user = self.userDao.get_user_by_code(user_id, code)
 		user_name = None
 		if user:
 			user_name = user.get('user_name')
+		self.log.debug('get_user_name <<- user_name:%s', user_name)
+
 		return user_name
 
 	def clear_user(self, user_name, message_id):
+		self.log.debug(
+			'clear_user ->> user_name:%s, message_id:%s',
+			user_name, message_id
+		)
 		if not user_name:
 			return '缺少用户参数'
 		self.userDao.clear_user(user_name)
-		self.orderDao.insert('', message_id, user_name, 0, '', '清算', 0, 0)
+		self.orderDao.insert('', message_id, user_name, 0, '', '清算', 0, 0, time.strftime("%F"))
 		self.orderDao.commit()
 		return '清算%s成功' % user_name
 
 	def query_user(self, user_name):
+		self.log.debug('query_user ->> user_name:%s', user_name)
 		if not user_name:
 			return '缺少用户参数'
 		cursor = self.userDao.select('money', order_by=None, user_name=user_name)
@@ -190,15 +213,20 @@ class BotDao:
 		else:
 			result = '0'
 		cursor.close()
+		self.log.debug('query_user <<- result:%s', result)
 		return result
 
 	def review(self, fetch):
+		self.log.debug('review ->>')
 		no_list = self.orderDao.get_missed_no()
+		self.log.debug('review ->> no_list: %s', no_list)
 		for no in no_list:
-			answer = fetch.query_answer(int(no))
+			answer = fetch.query_answer(no)
+			self.log.debug('review ->> answer: %s', answer)
 			self.accounting(no, answer)
 
 	def accounting(self, no, answer):
+		self.log.debug('accounting ->> no:%s, answer:%s', no, answer)
 		bingo_map = {}
 		cost_map = {}
 		accounting_message_id_map = {}
@@ -223,17 +251,17 @@ class BotDao:
 					cost = cost_map.get(k)
 					bingo = bingo_map.get(k)
 					count += (cost - bingo)
-					print('%s.. 打%s.. 中%s.. 赚%s' % (k, cost, bingo, cost - bingo))
-				print('总盈亏%s' % count)
+					self.log.info('%s.. 打%s.. 中%s.. 赚%s' % (k, cost, bingo, cost - bingo))
+					self.log.info('总盈亏%s' % count)
 			else:
-				print('本期%s没有人中奖' % no)
+				self.log.info('本期%s没有人中奖' % no)
 
 			if len(accounting_message_id_map) > 0:  # 修改状态
 				for message_id in accounting_message_id_map:
 					self.orderDao.update({'accounting': 0}, message_id=message_id)
 				self.orderDao.commit()
 		else:
-			print('本期%s没有下单记录' % no)
+			self.log.info('本期%s没有下单记录' % no)
 
 	def get_bingo_odds(self, answer, user_number):
 		answer = answer.replace(' ', '')
@@ -251,5 +279,5 @@ class BotDao:
 					break
 		else:
 			odds = 0
-			print('警告， 开奖号码长度有误')
+			self.log.warning('警告， 开奖号码长度有误')
 		return odds

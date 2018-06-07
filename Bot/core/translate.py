@@ -10,8 +10,8 @@ class Translate:
 	def __init__(self):
 		self.service = 'https://bc.exsba.com'
 		self.token = None
-		self.check_login()
 		self.encryption = Encryption()
+		self.check_login()
 
 	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service
@@ -22,7 +22,6 @@ class Translate:
 				"ssc_username": ssc_user, "ssc_password": ssc_psw
 			}
 		)
-		print(response.text)
 		login_status = False
 		if response.status_code == 200:
 			self.token = response.json()['token']
@@ -69,7 +68,6 @@ class Translate:
 		for number in number_array:
 			info_array.append('%s|%s' % (number['number'], number['money']))
 		info = ','.join(info_array)
-		print('下单 info:%s' % info)
 		url = "%s/make/order" % self.service
 		headers = {
 			'Authorization': self.token
@@ -97,6 +95,7 @@ class Translate:
 			ssc_user = input('请输入平台用户名:')
 			ssc_psw = input('请输入平台密码:')
 			if py_user and py_psw and ssc_user and ssc_psw:
+				ssc_psw = self.encryption.encrypted(ssc_psw)
 				message, login_status = self.login(py_user, py_psw, ssc_user, ssc_psw)
 			else:
 				message = '账号密码不能为空！'

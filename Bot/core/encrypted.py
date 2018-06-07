@@ -14,7 +14,7 @@ class Encryption:
 		                    "D1558C8246A7BC18D7DBE466AE5B14443A3210B6CA219393A66200CD6101DE00AE6E0312173B4D0EDA02A766363" \
 		                    "66E832D1A73F8B74F9100E28068CA0FD32AC16C249A721033C344867A37AA87A12D195FA6B"
 
-	def encrypted(self, password):
+	def rsa_encrypted(self, password):
 		base64_password = base64.b64encode(password.encode())
 		public_key = rsa.PublicKey(int(self.public_key_n, 16), 0x010001)
 		encrypted_password = rsa.encrypt(base64_password, public_key)
@@ -59,11 +59,16 @@ class Encryption:
 		s2 = self.fucker(data)
 		return self.fuck(s2)
 
+	def encrypted(self, data):
+		info = self.rsa_encrypted(password=data)
+		password = self.conversion(info)
+		return password
+
 	def test(self):
 		info = input("Input password:")
 		try:
 			print(info)
-			info = self.encrypted(password=info)
+			info = self.rsa_encrypted(password=info)
 			print(info)
 			password = self.conversion(info)
 			print(password)

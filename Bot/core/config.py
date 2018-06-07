@@ -11,7 +11,7 @@ class Config:
 
 	def __init__(self):
 		self.resource_path = os.path.dirname(__file__)
-		print('配置文件路径%s', self.resource_path)
+		print('配置文件路径', self.resource_path)
 		self.close_game_img = os.path.join(self.resource_path, '../resource/close_game.png')
 		self.open_game_img = os.path.join(self.resource_path, '../resource/open_game.png')
 		self.chats = '!@#$^&*()><:"/'
