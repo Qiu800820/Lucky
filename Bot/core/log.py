@@ -14,7 +14,7 @@ class Log:
 		logger.setLevel(logging.DEBUG)
 		formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
-		file_handler = logging.FileHandler('%s.log' % time.strftime('%F'))
+		file_handler = logging.FileHandler('%s.log' % time.strftime('%F'), encoding='utf-8')
 		file_handler.setFormatter(formatter)
 		logger.addHandler(file_handler)
 

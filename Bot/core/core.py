@@ -5,10 +5,10 @@ import re
 import threading
 import time
 
+import itchat
 from itchat import msg_register
 from itchat.content import *
 
-from Bot.core import itchat
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
@@ -91,7 +91,7 @@ def received(msg):  # TODO 部分账户无法获取User字段
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
 	if validity:
-		reply_message = "用户'%s' -- %sxx成功" % (message_no, actual_nick_name)
+		reply_message = "用户'%s' -- %sxx成功" % (actual_nick_name, message_no)
 		log.debug('received <<- message:%s', reply_message)
 		return add_random_chat(reply_message)  # 回复打码成功
 	elif '重复订单' in message:
@@ -303,7 +303,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	itchat.run(private_chat, group_chat, add_friend)
+	# itchat.run(private_chat, group_chat, add_friend) mock 测试
+	itchat.run()
 
 
 
