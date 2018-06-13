@@ -27,7 +27,7 @@ fetch = Fetch()
 # 重要配置
 config = Config()
 # 译码服务
-translate = Translate(config)
+translate = Translate(config, log)
 # DAO 服务
 botDao = BotDao(config.odds, log)
 
@@ -81,7 +81,7 @@ def received(msg):  # TODO 部分账户无法获取User字段
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
-		validity, message = botDao.save_user_number(  # 保存
+		validity, message, consume, current_money = botDao.save_user_number(  # 保存
 			number_array,
 			nick_name,
 			msg_id,
@@ -91,13 +91,15 @@ def received(msg):  # TODO 部分账户无法获取User字段
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
 	if validity:
-		reply_message = "用户'%s' -- %sxx成功" % (actual_nick_name, message_no)
+		reply_message = "用户'%s' --%s, %sxx成功 消耗积分:%s 剩余%.2f" % (
+			actual_nick_name, message_no, content, consume, current_money
+		)
 		log.debug('received <<- message:%s', reply_message)
 		return add_random_chat(reply_message)  # 回复打码成功
 	elif '重复订单' in message:
 		log.warning('用户重复订单, 如果是重新登陆导致的请忽略')
 		return None
-	reply_message = "用户'%s' -- xx失败，原因：%s" % (actual_nick_name, message)
+	reply_message = "用户'%s' -- %sxx失败，原因：%s" % (actual_nick_name, content, message)
 	log.debug('received <<- message:%s', reply_message)
 	return add_random_chat(reply_message)
 
@@ -300,8 +302,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	# itchat.run(private_chat, group_chat, add_friend) mock 测试
-	itchat.run()
+	itchat.run(private_chat, group_chat, add_friend)
+	# itchat.run()
 
 
 

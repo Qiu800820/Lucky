@@ -7,10 +7,11 @@ from Bot.core.encrypted import Encryption
 
 class Translate:
 
-	def __init__(self, config):
+	def __init__(self, config, log):
 		self.service = 'https://bc.exsba.com'
 		self.config = config
 		self.token = config.token
+		self.log = log
 		self.encryption = Encryption()
 		self.check_login()
 
@@ -24,6 +25,7 @@ class Translate:
 			}
 		)
 		login_status = False
+		self.log.debug(response.text)
 		if response.status_code == 200:
 			self.token = response.json()['token']
 			self.config.token = self.token
@@ -47,7 +49,7 @@ class Translate:
 		number_array = []
 		message = ''
 		validity = True
-		if response.status_code != 200 or '<html>' in result:
+		if response.status_code != 200 or len(result) == 0 or 'html' in result:
 			message = '译码错误'
 			validity = False
 		else:
@@ -88,8 +90,7 @@ class Translate:
 		return validity, message
 
 	def check_login(self):
-		if self.token and len(self.token) > 1:
-			return None
+
 		print('============= 群助手v1 =============\n')
 		print('               登陆                 \n')
 		login_status = False
@@ -108,6 +109,7 @@ class Translate:
 		self.config.save_config()
 
 	def check_response(self, response):
+		self.log.debug(response.text)
 		if response.status_code == 401:
 			self.config.token = ""
 			self.config.save_config()
