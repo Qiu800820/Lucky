@@ -14,7 +14,7 @@ from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
 from Bot.core.log import Log
 from Bot.core.translate import Translate
-from Bot.core.util import prepare_message_params
+from Bot.core import util
 
 isReceived = False
 isOpenGame = False
@@ -57,14 +57,14 @@ def group_chat(msg):
 	return message
 
 
-def received(msg):  # TODO 部分账户无法获取User字段
+def received(msg):
 	log.debug('received ->> message:%s', msg)
 	if not isReceived:
 		return None
 	if not isOpenGame:
 		log.warning('已停止')
 		return add_random_chat('已停止')
-	content, create_time, actual_nick_name, nick_name, msg_id = prepare_message_params(msg)
+	content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
 	if not nick_name:
 		if msg['FromUserName'] in chat_room_name_list:
 			log.debug('群内不支持打码，请加我好友私聊')
@@ -230,10 +230,7 @@ def show_answer():
 	if result and chat_room_name_list and last_answer_no != result['no']:
 		last_answer_no = result['no']
 		log.info('公布结果%s', last_answer_no)
-		message = []
-		for item in history_result:
-			message.append('%s.. %s' % (item['no'], item['number']))
-		message = '\n'.join(message)
+		message = util.format_history(history_result)
 		log.debug('show_answer ->> message: %s', message)
 		for chat_room in chat_room_name_list:
 			itchat.send(message, toUserName=chat_room)

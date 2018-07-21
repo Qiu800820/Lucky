@@ -19,3 +19,11 @@ def prepare_message_params(msg):
 		nick_name = actual_nick_name = None
 	msg_id = msg['MsgId']
 	return content, create_time, actual_nick_name, nick_name, msg_id
+
+
+def format_history(number_array):
+	message = []
+	for item in number_array:
+		message.append('%s.. %s' % (item['no'][-3:], item['number'].replace(' ', '  ')))
+	message = '\n\n'.join(message)
+	return message
