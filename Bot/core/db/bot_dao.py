@@ -146,9 +146,9 @@ class BotDao:
 			number_array, user_name, message_id, no, number_abb
 		)
 		if not (number_array and user_name and message_id and no and number_abb):
-			return False, '信息有误'
+			return False, '信息有误', 0, 0
 		if self.orderDao.has_message_id(message_id):
-			return False, '重复订单'
+			return False, '重复订单', 0, 0
 		else:
 			user = self.userDao.get_user(user_name)
 			consume = 0
@@ -158,11 +158,12 @@ class BotDao:
 				consume += number['money']
 			if not user or user['money'] < consume:
 				self.orderDao.rollback()
-				return False, '账号不存在或金额不足，请联系财务'
+				return False, '账号不存在或金额不足，请联系财务', 0, 0
 			else:
 				self.orderDao.commit()
 				self.add_user_money(user_name, (0 - consume), '下单', message_id)
-				return True, '下单成功'
+				money = user['money'] - consume
+				return True, '下单成功', consume, money
 
 	def add_user_money(self, user_name, money, source, message_id, number='', answer_no=''):
 		self.log.debug(
@@ -221,9 +222,10 @@ class BotDao:
 		no_list = self.orderDao.get_missed_no()
 		self.log.debug('review ->> no_list: %s', no_list)
 		for no in no_list:
-			answer = fetch.query_answer(no)
+			answer, _ = fetch.query_answer(no)
 			self.log.debug('review ->> answer: %s', answer)
-			self.accounting(no, answer)
+			if answer and answer['number']:
+				self.accounting(no, answer['number'])
 
 	def accounting(self, no, answer):
 		self.log.debug('accounting ->> no:%s, answer:%s', no, answer)

@@ -64,27 +64,28 @@ class Fetch:
 
 	# 计算需要加载的期数
 	def get_day_no(self, extra_time=0, current_second=None):
-		no = None
 		if not current_second:
 			current_second = time.time()
 		current_second = int(current_second) + extra_time  # 提前时间
-		current_second %= 86400
+		second = current_second % 86400
 
-		if (2 * 3600) <= current_second <= (14 * 3600):  # 10:00 - 22:00 -> 24-96
-			no = 24 + int((current_second - 2 * 3600) / 600)
-		elif (14 * 3600) < current_second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
-			no = 96 + int((current_second - 14 * 3600) / 300)
-		no = int(time.strftime('%y%m%d', time.localtime())) * 1000 + no
+		if (2 * 3600) <= second <= (14 * 3600):  # 10:00 - 22:00 -> 24-96
+			no = 24 + int((second - 2 * 3600) / 600)
+		elif (14 * 3600) < second < (18 * 3600):  # 22:00 - 02:00 -> 97-120-23
+			no = 96 + int((second - 14 * 3600) / 300)
+		else:
+			no = 23
+		if no > 120:
+			no -= 120
+		no += int(time.strftime('%y%m%d', time.localtime(current_second - 300))) * 1000
 		return no
 
 
 def test():
 	fetch = Fetch()
-	for i in range(60):
-		second = int(time.time()) + (i * 10)
+	for i in range(200):
+		second = int(1528816025) + (i * 30)
 		print(fetch.get_day_no(60, second), time.asctime(time.localtime(second)))
-	second = 1528381140
-	print(fetch.get_day_no(60, second), time.asctime(time.localtime(second)))
 
 
 if __name__ == '__main__':

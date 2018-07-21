@@ -21,9 +21,27 @@ def prepare_message_params(msg):
 	return content, create_time, actual_nick_name, nick_name, msg_id
 
 
-def format_history(number_array):
+def format_history_message(number_array):
 	message = []
 	for item in number_array:
-		message.append('%s.. %s' % (item['no'][-3:], item['number'].replace(' ', '  ')))
+		number = item['number']
+		if ' ' in number:
+			number = number.replace(' ', '  ')
+		elif len(number) >= 5:
+			number = '%s  %s  %s  %s  %s' % (number[0], number[1], number[2], number[3], number[4])
+
+		message.append('%s.. %s' % (item['no'], number))
 	message = '\n\n'.join(message)
 	return message
+
+
+def test():
+	number_array = [
+		{'no': '20180613001', 'number': '0 1 2 3 4'}, {'no': '20180613002', 'number': '0 1 2 3 4'},
+		{'no': '20180613003', 'number': '01234'}, {'no': '20180613004', 'number': '01234'}
+	]
+	print(format_history_message(number_array))
+
+
+if __name__ == '__main__':
+	test()
