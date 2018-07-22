@@ -32,10 +32,10 @@ class OrderObject(sqlite_db.Table):
 	def replace(self, *args):
 		self.free(super(OrderObject, self).replace(*args))
 
-	def get_all_accounting_by_no(self, no):
+	def get_all_accounting_by_no(self, no, accounting=1):
 		cursor = self.select(
 			'number', 'user_name', 'money', 'message_id',
-			order_by=None, no=no, type=1, accounting=1
+			order_by=None, no=no, type=1, accounting=accounting
 		)
 		result = []
 		order = cursor.fetchone()
@@ -227,18 +227,24 @@ class BotDao:
 			if answer and answer['number']:
 				self.accounting(no, answer['number'])
 
-	def accounting(self, no, answer):
-		self.log.debug('accounting ->> no:%s, answer:%s', no, answer)
+	def accounting(self, no, answer, is_balance=False):
+		self.log.debug('accounting ->> no:%s, answer:%s, is_balance:%s', no, answer, is_balance)
 		bingo_map = {}
 		cost_map = {}
 		accounting_message_id_map = {}
-		order_list = self.orderDao.get_all_accounting_by_no(no)
+		if is_balance:
+			order_list = self.orderDao.get_all_accounting_by_no(no, accounting=0)
+		else:
+			order_list = self.orderDao.get_all_accounting_by_no(no)
 		if order_list:
 			for order in order_list:
 				bingo_odds = self.get_bingo_odds(answer, order['number'])
 				user_name = order['user_name']
 				if bingo_odds > 0:
 					bingo_money = order['money'] * bingo_odds
+					self.log.debug('name:%s.. number:%s.. money:%s, odd:%s ,count:%s' % (
+						user_name, order['number'], order['money'], bingo_odds, bingo_money
+					))
 					count_money = bingo_map.get(user_name, 0) + bingo_money
 					bingo_map.setdefault(user_name, count_money)
 					bingo_map[user_name] = count_money
@@ -249,7 +255,8 @@ class BotDao:
 			if len(bingo_map) > 0:
 				count = 0
 				for k in bingo_map:
-					self.add_user_money(k, bingo_map.get(k), '中奖', '', number='[%s]' % answer, answer_no=no)
+					if not is_balance:
+						self.add_user_money(k, bingo_map.get(k), '中奖', '', number='[%s]' % answer, answer_no=no)
 					cost = cost_map.get(k)
 					bingo = bingo_map.get(k)
 					count += (cost - bingo)
@@ -258,7 +265,7 @@ class BotDao:
 			else:
 				self.log.info('本期%s没有人中奖' % no)
 
-			if len(accounting_message_id_map) > 0:  # 修改状态
+			if len(accounting_message_id_map) > 0 and not is_balance:  # 修改状态
 				for message_id in accounting_message_id_map:
 					self.orderDao.update({'accounting': 0}, message_id=message_id)
 				self.orderDao.commit()
@@ -268,7 +275,7 @@ class BotDao:
 	def get_bingo_odds(self, answer, user_number):
 		answer = answer.replace(' ', '')
 		size = 4
-		answer = answer[1:]  # 只取4位
+		answer = answer[:-1]  # 只取4位
 		odds_index = 0
 		odds = self.odds_config[odds_index]  # 中奖比例
 		if len(answer) == len(user_number):

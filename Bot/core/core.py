@@ -15,7 +15,6 @@ from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
 from Bot.core.log import Log
 from Bot.core.translate import Translate
-from Bot.core import util
 
 isReceived = False
 isOpenGame = False
@@ -66,11 +65,11 @@ def received(msg):
 		log.warning('已停止')
 		return add_random_chat('已停止')
 	content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
-	if not nick_name:
+	if not nick_name:  # todo 不存在User表自动忽略
 		if msg['FromUserName'] in chat_room_name_list:
 			log.debug('群内不支持打码，请加我好友私聊')
 			return add_random_chat('群内不支持打码，请加我好友私聊')
-		log.debug('非自动群、打码消息，直接忽略')
+		log.warning('非自动群、打码消息，直接忽略')
 		return None
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
@@ -91,7 +90,7 @@ def received(msg):
 		)
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
-	if validity:
+	if validity:  # todo 提示打码组数 免责申明 支持退码、打码量超6000时 自动分两次
 		reply_message = "用户'%s' --%s, %sxx成功 消耗积分:%s 剩余%.2f" % (
 			actual_nick_name, message_no, content, consume, current_money
 		)
