@@ -16,6 +16,7 @@ from Bot.core.fetch import Fetch
 from Bot.core.log import Log
 from Bot.core.translate import Translate
 
+isLazy = True
 isReceived = False
 isOpenGame = False
 BossUserNameList = None
@@ -37,6 +38,8 @@ def private_chat(msg):
 	try:
 		if '识别码' in msg['Content']:
 			message = set_alias(msg)
+		elif '退码' in msg['Content']:
+			pass
 		elif msg['FromUserName'] in get_boss_user_name():
 			message = command(msg)
 		else:
@@ -65,12 +68,15 @@ def received(msg):
 		log.warning('已停止')
 		return add_random_chat('已停止')
 	content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
-	if not nick_name:  # todo 不存在User表自动忽略
+	if not nick_name:
 		if msg['FromUserName'] in chat_room_name_list:
 			log.debug('群内不支持打码，请加我好友私聊')
 			return add_random_chat('群内不支持打码，请加我好友私聊')
 		log.warning('非自动群、打码消息，直接忽略')
-		return None
+		return not isLazy and add_random_chat('未识别用户, 请输入识别码') or None
+	elif not botDao.get_user(user_name=nick_name):
+		log.warning('未识别用户')
+		return not isLazy and add_random_chat('未识别用户, 请输入识别码') or None
 	validity, number_array, message = translate.prepare(content)
 	if not isReceived:
 		log.warning('控制者已停止程序')
@@ -90,9 +96,10 @@ def received(msg):
 		)
 	if validity:  # 保存成功
 		validity, message = translate.post_number(number_array)
-	if validity:  # todo 提示打码组数 免责申明 支持退码、打码量超6000时 自动分两次
-		reply_message = "用户'%s' --%s, %sxx成功 消耗积分:%s 剩余%.2f" % (
-			actual_nick_name, message_no, content, consume, current_money
+		message = validity and '%s %s' % (message, config.suffix_message) or message
+	if validity:
+		reply_message = "用户'%s' --%s, %sxx成功 %s 消耗积分:%.1f 剩余%.1f" % (
+			actual_nick_name, message_no, content, message, consume, current_money
 		)
 		log.debug('received <<- message:%s', reply_message)
 		return add_random_chat(reply_message)  # 回复打码成功
@@ -112,6 +119,14 @@ def add_friend(msg):
 		msg.user.send('请告诉我你的识别码，以辨别你的身份!(识别码由财务提供)')
 	except Exception:
 		log.error('group_chat', exc_info=True)
+
+
+def revoke(msg):
+	log.debug('revoke ->> msg:%s' % msg)
+	order_id = re.search(r'[0-9]+', msg['Content']).group()
+	validity, message = translate.revoke(order_id)
+	log.debug('revoke <<- message:%s' % message)
+	return message
 
 
 def set_alias(msg):

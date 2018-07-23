@@ -290,3 +290,6 @@ class BotDao:
 			odds = 0
 			self.log.warning('警告， 开奖号码长度有误')
 		return odds
+
+	def get_user(self, user_name):
+		return self.userDao.get_user(user_name)
