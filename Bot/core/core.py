@@ -39,7 +39,7 @@ def private_chat(msg):
 		if '识别码' in msg['Content']:
 			message = set_alias(msg)
 		elif '退码' in msg['Content']:
-			pass
+			message = revoke(msg)
 		elif msg['FromUserName'] in get_boss_user_name():
 			message = command(msg)
 		else:

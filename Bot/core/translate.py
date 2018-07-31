@@ -3,6 +3,7 @@
 import requests
 
 from Bot.core.encrypted import Encryption
+from Bot.core.util import display_simple_numbers
 
 
 class Translate:
@@ -88,8 +89,8 @@ class Translate:
 		else:
 			validity = True
 			result = response.json()
-			message = '(%s ...)共%s组, 编号%s' % (
-				','.join(number_array[0:3]), len(number_array), result.get('order_id')
+			message = '(%s)共%s组, 编号%s' % (
+				display_simple_numbers(number_array), len(number_array), result.get('order_id')
 			)
 		return validity, message
 
@@ -101,7 +102,6 @@ class Translate:
 		data = {
 			'info': order_id
 		}
-		message = ''
 		validity = False
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
