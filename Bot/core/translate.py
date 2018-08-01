@@ -19,13 +19,13 @@ class Translate:
 
 	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service
-		response = requests.post(
-			url,
-			data={
-				"username": py_user, "password": py_psw,
-				"ssc_username": ssc_user, "ssc_password": ssc_psw
-			}
-		)
+		data = {
+			"username": py_user, "password": py_psw,
+			"ssc_username": ssc_user, "ssc_password": ssc_psw,
+			"ssc_base_url": self.get_base_url()
+		}
+		self.log.debug('--> url:%s, data:%s' % (url, data))
+		response = requests.post(url, data=data)
 		login_status = False
 		self.log.debug(response.text)
 		if response.status_code == 200:
