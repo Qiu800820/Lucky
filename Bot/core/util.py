@@ -1,5 +1,9 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+import re
+import time
+
+import requests
 
 
 def prepare_message_params(msg):
@@ -39,6 +43,31 @@ def display_simple_numbers(numbers):
 	if len(numbers < 11):
 		return ','.join(numbers)
 	return '%s .... %s' % (','.join(numbers[0:5]), ','.join(numbers[-5:]))
+
+
+def get_superior_site(urls):
+	superior_site = None
+	superior_time = 100000
+	for url in urls:
+		start_time = time.time()
+		response = None
+		try:
+			response = requests.get(url, timeout=1)
+		except Exception:
+			pass
+		if response and response.status_code == 200:
+			consuming_time = (time.time() - start_time) * 1000
+		else:
+			consuming_time = 100000
+		print('%s 耗时 %s' % (url, consuming_time))
+		if consuming_time < superior_time:
+			superior_time = consuming_time
+			superior_site = url
+	if superior_site:
+		match = re.search(r'(?P<value>[\w:]+//.*?)/', superior_site)
+		superior_site = match.group('value')
+
+	return superior_site
 
 
 def test():

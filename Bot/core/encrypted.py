@@ -89,3 +89,8 @@ class Encryption:
 			headers=header
 		)
 		return response.text
+
+
+if __name__ == '__main__':
+	test = Encryption()
+	print(test.encrypted('aaa111'))
