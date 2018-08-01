@@ -65,6 +65,7 @@ class Encryption:
 		return password
 
 	def test(self):
+		site = input("Input site:")
 		info = input("Input password:")
 		try:
 			print(info)
@@ -72,20 +73,20 @@ class Encryption:
 			print(info)
 			password = self.conversion(info)
 			print(password)
-			print(self.login(password))
+			print(self.login(site, password))
 		except Exception as e:
 			print(e)
 		finally:
 			input("encrypted done")
 
-	def login(self, pwd):
+	def login(self, site, pwd):
 		header = {
 			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/61.0.3163.100 Safari/537.36',
 			'Accept': 'text/plain, */*'}
 		session = Session()
-		session.get('http://hh.zzt333.com/Default.aspx')
+		session.get('%s/Default.aspx' % site)
 		response = session.post(
-			'http://hh.zzt333.com/MemberLogin.aspx?User=ss888&Pwd=%s' % pwd,
+			'%s/MemberLogin.aspx?User=ss888&Pwd=%s' % (site, pwd),
 			headers=header
 		)
 		return response.text

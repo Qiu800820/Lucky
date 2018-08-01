@@ -6,7 +6,6 @@ from Bot.core.encrypted import Encryption
 
 
 class Translate:
-
 	def __init__(self, config, log):
 		self.service = 'https://bc.exsba.com'
 		self.config = config
@@ -17,13 +16,12 @@ class Translate:
 
 	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service
-		response = requests.post(
-			url,
-			data={
-				"username": py_user, "password": py_psw,
-				"ssc_username": ssc_user, "ssc_password": ssc_psw
-			}
-		)
+		data = {
+			"username": py_user, "password": py_psw,
+			"ssc_username": ssc_user, "ssc_password": ssc_psw
+		}
+		self.log.debug('--> url:%s, data:%s' % (url, data))
+		response = requests.post(url, data=data)
 		login_status = False
 		self.log.debug(response.text)
 		if response.status_code == 200:
@@ -43,6 +41,7 @@ class Translate:
 		data = {
 			'info': info
 		}
+		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
 		result = response.json()['data']
@@ -79,6 +78,7 @@ class Translate:
 		data = {
 			'info': info
 		}
+		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		message = ''
 		validity = False
 		response = requests.post(url, data, headers=headers)
@@ -114,5 +114,3 @@ class Translate:
 			self.config.token = ""
 			self.config.save_config()
 			print('警告：登陆过期，请重启程序！！！！')
-
-
