@@ -23,8 +23,7 @@ class Translate:
 			url,
 			data={
 				"username": py_user, "password": py_psw,
-				"ssc_username": ssc_user, "ssc_password": ssc_psw,
-				"ssc_base_url": self.get_base_url()
+				"ssc_username": ssc_user, "ssc_password": ssc_psw
 			}
 		)
 		login_status = False
@@ -46,6 +45,7 @@ class Translate:
 		data = {
 			'info': info
 		}
+		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
 		result = response.json()['data']
@@ -82,6 +82,7 @@ class Translate:
 		data = {
 			'info': info
 		}
+		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		message = ''
 		validity = False
 		response = requests.post(url, data, headers=headers)
