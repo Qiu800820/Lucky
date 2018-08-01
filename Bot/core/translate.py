@@ -3,6 +3,7 @@
 import requests
 
 from Bot.core.encrypted import Encryption
+from Bot.core.util import display_simple_numbers
 
 
 class Translate:
@@ -86,6 +87,28 @@ class Translate:
 		if response.status_code != 200:
 			message = response.text
 		else:
+			validity = True
+			result = response.json()
+			message = '(%s)共%s组, 编号%s' % (
+				display_simple_numbers(number_array), len(number_array), result.get('order_id')
+			)
+		return validity, message
+
+	def revoke(self, order_id):
+		url = '%s/revoke' % self.service
+		headers = {
+			'Authorization': self.token
+		}
+		data = {
+			'info': order_id
+		}
+		validity = False
+		response = requests.post(url, data, headers=headers)
+		self.check_response(response)
+		if response.status_code != 200:
+			message = response.text
+		else:
+			message = '退码成功'
 			validity = True
 		return validity, message
 

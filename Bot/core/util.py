@@ -35,6 +35,12 @@ def format_history_message(number_array):
 	return message
 
 
+def display_simple_numbers(numbers):
+	if len(numbers < 11):
+		return ','.join(numbers)
+	return '%s .... %s' % (','.join(numbers[0:5]), ','.join(numbers[-5:]))
+
+
 def test():
 	number_array = [
 		{'no': '20180613001', 'number': '0 1 2 3 4'}, {'no': '20180613002', 'number': '0 1 2 3 4'},

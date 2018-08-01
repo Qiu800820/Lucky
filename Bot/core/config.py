@@ -22,6 +22,7 @@ class Config:
 		self.begin_game_hint = None
 		self.odds = default_odds
 		self.token = None
+		self.suffix_message = None
 		self.load_config()
 
 	def load_config(self):
@@ -38,6 +39,7 @@ class Config:
 			self.answer_refresh_time = config['answer_refresh_time']
 			self.begin_game_hint = config['begin_game_hint']
 			self.odds = config['odds']
+			self.suffix_message = config['suffix_message']
 			self.token = config['token']
 
 	def save_config(self):
@@ -49,6 +51,7 @@ class Config:
 			config.setdefault('preview_time', self.preview_time)
 			config.setdefault('answer_refresh_time', self.answer_refresh_time)
 			config.setdefault('begin_game_hint', self.begin_game_hint)
+			config.setdefault('suffix_message', self.suffix_message)
 			config.setdefault('odds', self.odds)
 			config.setdefault('token', self.token)
 			json.dump(config, f, ensure_ascii=False)
