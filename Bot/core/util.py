@@ -39,8 +39,11 @@ def format_history_message(number_array):
 	return message
 
 
-def display_simple_numbers(numbers):
-	if len(numbers < 11):
+def display_simple_numbers(number_array):
+	numbers = []
+	for number in number_array:
+		numbers.append(number['number'])
+	if len(numbers) < 11:
 		return ','.join(numbers)
 	return '%s .... %s' % (','.join(numbers[0:5]), ','.join(numbers[-5:]))
 

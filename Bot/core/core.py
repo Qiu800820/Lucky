@@ -5,11 +5,12 @@ import re
 import threading
 import time
 
-import itchat
+# import itchat
 from itchat import msg_register
 from itchat.content import *
 
-from Bot.core import util
+
+from Bot.core import util, itchat
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
@@ -87,16 +88,20 @@ def received(msg):
 		validity = False
 		message = '超过有效时间'
 	if validity:  # 译码结果
-		validity, message, consume, current_money = botDao.save_user_number(  # 保存
+		validity, message = botDao.check_multiple_cash(number_array, nick_name, msg_id)
+	if validity:  # 校验成功
+		validity, message, order_id = translate.post_number(number_array)
+		message = validity and '%s %s' % (message, config.suffix_message) or message
+	if validity and order_id:  # post成功
+		validity, local_message, consume, current_money = botDao.save_user_number(  # 保存
 			number_array,
 			nick_name,
 			msg_id,
 			message_no,
-			content
+			content,
+			order_id
 		)
-	if validity:  # 保存成功
-		validity, message = translate.post_number(number_array)
-		message = validity and '%s %s' % (message, config.suffix_message) or message
+		message = local_message or message
 	if validity:
 		reply_message = "用户'%s' --%s, %sxx成功 %s 消耗积分:%.1f 剩余%.1f" % (
 			actual_nick_name, message_no, content, message, consume, current_money
@@ -125,6 +130,9 @@ def revoke(msg):
 	log.debug('revoke ->> msg:%s' % msg)
 	order_id = re.search(r'[0-9]+', msg['Content']).group()
 	validity, message = translate.revoke(order_id)
+	if validity:  # 服务器退码成功
+		content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
+		validity, message = botDao.revoke(nick_name, order_id, msg_id)
 	log.debug('revoke <<- message:%s' % message)
 	return message
 
@@ -317,8 +325,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	# itchat.run(private_chat, group_chat, add_friend) mock 测试
-	itchat.run()
+	itchat.run(private_chat, group_chat, add_friend)  # mock 测试
+	# itchat.run()
 
 
 

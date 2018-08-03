@@ -84,6 +84,7 @@ class Translate:
 		}
 		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		message = ''
+		order_id = ''
 		validity = False
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
@@ -92,20 +93,22 @@ class Translate:
 		else:
 			validity = True
 			result = response.json()
+			order_id = result.get('order_id')
 			message = '(%s)共%s组, 编号%s' % (
-				display_simple_numbers(number_array), len(number_array), result.get('order_id')
+				display_simple_numbers(number_array), len(number_array), order_id
 			)
-		return validity, message
+		return validity, message, order_id
 
 	def revoke(self, order_id):
-		url = '%s/revoke' % self.service
+		url = '%s/cancel/order' % self.service
 		headers = {
 			'Authorization': self.token
 		}
 		data = {
-			'info': order_id
+			'id': order_id
 		}
 		validity = False
+		self.log.debug('--> url:%s, data:%s, headers:%s' % (url, data, headers))
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
 		if response.status_code != 200:

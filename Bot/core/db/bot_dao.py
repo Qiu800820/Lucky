@@ -11,7 +11,7 @@ class OrderObject(sqlite_db.Table):
 	def __init__(self):
 		super(OrderObject, self).__init__("./resource/bot.db", "OddsOrder", [
 			'number TEXT', 'message_id TEXT', 'user_name TEXT', 'money NUMBER', 'no TEXT', 'number_abb TEXT',
-			'type NUMBER', 'accounting NUMBER', 'create_time TEXT'
+			'order_id TEXT', 'type NUMBER', 'accounting NUMBER', 'create_time TEXT'
 		])
 
 	def insert(self, *args):
@@ -63,6 +63,15 @@ class OrderObject(sqlite_db.Table):
 			has = True
 		self.free(cursor)
 		return has
+
+	def count_money_by_order_id(self, order_id):
+		money = 0
+		cursor = self.read('select sum(money) from OddsOrder where order_id = ?', [order_id])
+		order = cursor.fetchone()
+		if order:
+			money = order[0]
+		self.free(cursor)
+		return money
 
 
 class UserObject(sqlite_db.Table):
@@ -140,30 +149,41 @@ class BotDao:
 		self.odds_config = odds_config
 		self.log = log
 
-	def save_user_number(self, number_array, user_name, message_id, no, number_abb):
+	def check_multiple_cash(self, number_array, user_name, message_id):
+		if self.orderDao.has_message_id(message_id):
+			return False, '重复订单'
+		consume = 0
+		for number in number_array:
+			consume += number['money']
+		user = self.userDao.get_user(user_name)
+		if not user or user['money'] < consume:
+			return False, '账号不存在或金额不足，请联系财务'
+		else:
+			return True, None
+
+	def save_user_number(self, number_array, user_name, message_id, no, number_abb, order_id):
 		self.log.debug(
 			'save_user_number ->> number_array:%s, user_name:%s, message_id:%s, no:%s, number_abb:%s',
 			number_array, user_name, message_id, no, number_abb
 		)
 		if not (number_array and user_name and message_id and no and number_abb):
+			self.log.warning('----------------  warning  程序异常造成漏单  -------------------')
 			return False, '信息有误', 0, 0
-		if self.orderDao.has_message_id(message_id):
-			return False, '重复订单', 0, 0
+
 		else:
 			user = self.userDao.get_user(user_name)
 			consume = 0
 			date_str = time.strftime('%F')
 			for number in number_array:
-				self.orderDao.insert(number['number'], message_id, user_name, number['money'], no, number_abb, 1, 1, date_str)
+				self.orderDao.insert(
+					number['number'], message_id, user_name, number['money'], no, number_abb, order_id, 1, 1, date_str
+				)
 				consume += number['money']
-			if not user or user['money'] < consume:
-				self.orderDao.rollback()
-				return False, '账号不存在或金额不足，请联系财务', 0, 0
-			else:
-				self.orderDao.commit()
-				self.add_user_money(user_name, (0 - consume), '下单', message_id)
-				money = user['money'] - consume
-				return True, '下单成功', consume, money
+
+			self.orderDao.commit()
+			self.add_user_money(user_name, (0 - consume), '下单', message_id)
+			money = user['money'] - consume
+			return True, None, consume, money
 
 	def add_user_money(self, user_name, money, source, message_id, number='', answer_no=''):
 		self.log.debug(
@@ -173,7 +193,7 @@ class BotDao:
 		if not (user_name and money):
 			return '用户或金额数据错误'
 		user = self.userDao.add_user_money(user_name, money)
-		self.orderDao.insert(number, message_id, user_name, money, answer_no, source, 0, 0, time.strftime("%F"))
+		self.orderDao.insert(number, message_id, user_name, money, answer_no, source, '', 0, 0, time.strftime("%F"))
 		self.orderDao.commit()
 		message = '上分成功, 识别码:%s%s 第一次下单的用户 需要先把识别码发给机器人' % (user['code'], user['user_id'])
 		return message
@@ -199,7 +219,7 @@ class BotDao:
 		if not user_name:
 			return '缺少用户参数'
 		self.userDao.clear_user(user_name)
-		self.orderDao.insert('', message_id, user_name, 0, '', '清算', 0, 0, time.strftime("%F"))
+		self.orderDao.insert('', message_id, user_name, 0, '', '清算', '', 0, 0, time.strftime("%F"))
 		self.orderDao.commit()
 		return '清算%s成功' % user_name
 
@@ -293,3 +313,10 @@ class BotDao:
 
 	def get_user(self, user_name):
 		return self.userDao.get_user(user_name)
+
+	def revoke(self, user_name, order_id, message_id):
+		money = self.orderDao.count_money_by_order_id(order_id)
+		self.userDao.add_user_money(user_name, money)
+		self.orderDao.insert('', message_id, user_name, money, '', '退码', '', 0, 0, time.strftime("%F"))
+		self.orderDao.commit()
+		return True, '退码成功'
