@@ -2,6 +2,7 @@
 # -*- coding: UTF-8 -*-
 import base64
 import binascii
+import random
 
 import rsa
 from requests import Session
@@ -86,7 +87,12 @@ class Encryption:
 		session = Session()
 		session.get('%s/Default.aspx' % site)
 		response = session.post(
-			'%s/MemberLogin.aspx?User=ss888&Pwd=%s' % (site, pwd),
+			'%s/MemberLogin.aspx?User=ss888&Pwd=%s&random=%s' % (site, pwd, random.random()),
 			headers=header
 		)
 		return response.text
+
+if __name__ == '__main__':
+	test = Encryption()
+	print(test.encrypted('aaa111'))
+	print(test.login('http://hh.qas666.com', 'aaa111'))
