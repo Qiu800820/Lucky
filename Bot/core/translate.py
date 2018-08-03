@@ -1,12 +1,14 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import requests
+from lxml import etree
 
 from Bot.core.encrypted import Encryption
-from Bot.core.util import display_simple_numbers
+from Bot.core.util import display_simple_numbers, get_superior_site
 
 
 class Translate:
+
 	def __init__(self, config, log):
 		self.service = 'https://bc.exsba.com'
 		self.config = config
@@ -19,7 +21,8 @@ class Translate:
 		url = "%s/user/sign/in" % self.service
 		data = {
 			"username": py_user, "password": py_psw,
-			"ssc_username": ssc_user, "ssc_password": ssc_psw
+			"ssc_username": ssc_user, "ssc_password": ssc_psw,
+			"ssc_base_url": self.get_base_url()
 		}
 		self.log.debug('--> url:%s, data:%s' % (url, data))
 		response = requests.post(url, data=data)
@@ -131,9 +134,20 @@ class Translate:
 				print(message)
 		self.config.save_config()
 
+	def get_base_url(self):
+		response = requests.get(self.config.base_url)
+		if response.status_code != 200:
+			return self.config.base_url
+		else:
+			selector = etree.HTML(response.text)
+			urls = selector.xpath("//a[@class='best']/@data-testurl")
+			return get_superior_site(urls)
+
 	def check_response(self, response):
 		self.log.debug(response.text)
 		if response.status_code == 401:
 			self.config.token = ""
 			self.config.save_config()
 			print('警告：登陆过期，请重启程序！！！！')
+
+

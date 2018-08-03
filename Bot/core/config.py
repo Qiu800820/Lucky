@@ -22,6 +22,7 @@ class Config:
 		self.begin_game_hint = None
 		self.odds = default_odds
 		self.token = None
+		self.base_url = None
 		self.suffix_message = None
 		self.load_config()
 
@@ -41,6 +42,7 @@ class Config:
 			self.odds = config['odds']
 			self.suffix_message = config['suffix_message']
 			self.token = config['token']
+			self.base_url = config['base_url']
 
 	def save_config(self):
 		path = os.path.join(self.resource_path, '../resource/config.txt')
@@ -54,6 +56,7 @@ class Config:
 			config.setdefault('suffix_message', self.suffix_message)
 			config.setdefault('odds', self.odds)
 			config.setdefault('token', self.token)
+			config.setdefault('base_url', self.base_url)
 			json.dump(config, f, ensure_ascii=False)
 
 
