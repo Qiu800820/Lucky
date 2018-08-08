@@ -29,21 +29,27 @@ class Config:
 	def load_config(self):
 		# 读取配置
 		path = os.path.join(self.resource_path, '../resource/config.txt')
-		with open(path, 'r', -1, 'utf-8') as f:
-			config = f.read()
-			if config.startswith(u'\ufeff'):
-				config = config.encode('utf8')[3:].decode('utf8')
-			config = json.loads(config)
-			self.chatRoomName = config['chatRoomName']
-			self.BossName = config['BossName']
-			self.preview_time = config['preview_time']  # 提前60秒收盘
-			self.answer_refresh_time = config['answer_refresh_time']
-			self.begin_game_hint = config['begin_game_hint']
-			self.odds = config['odds']
-			self.suffix_message = config['suffix_message']
-			self.token = config['token']
-			self.base_url = config['base_url']
-
+		try:
+			with open(path, 'r', -1, 'utf-8') as f:
+				config = f.read()
+				if config.startswith(u'\ufeff'):
+					config = config.encode('utf8')[3:].decode('utf8')
+				config = json.loads(config)
+				self.chatRoomName = config['chatRoomName']
+				self.BossName = config['BossName']
+				self.preview_time = config['preview_time']  # 提前60秒收盘
+				self.answer_refresh_time = config['answer_refresh_time']
+				self.begin_game_hint = config['begin_game_hint']
+				self.odds = config['odds']
+				self.suffix_message = config['suffix_message']
+				self.token = config['token']
+				self.base_url = config['base_url']
+		except Exception as e:
+			if isinstance(e, ValueError):
+				pass
+			if isinstance(e, KeyError):
+				pass
+			raise e
 	def save_config(self):
 		path = os.path.join(self.resource_path, '../resource/config.txt')
 		with open(path, 'w', -1, 'utf-8') as f:
