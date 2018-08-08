@@ -55,6 +55,7 @@ class Translate:
 		if response.status_code != 200 or len(result) == 0 or 'html' in result:
 			message = '译码错误'
 			validity = False
+			# todo 兼容关盘提示
 		else:
 			for item in result.split(','):
 				item = item.split('=')

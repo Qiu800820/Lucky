@@ -243,8 +243,8 @@ def close_game():
 		for chat_room in chat_room_name_list:
 			itchat.send('%s.. 停止' % no, toUserName=chat_room)
 	if isReceived:
-		# 10秒后开启下期
-		delay_run(30, open_game)
+		# 60秒后开启下期
+		delay_run(60, open_game)
 
 
 def show_answer():
