@@ -314,8 +314,19 @@ class BotDao:
 	def get_user(self, user_name):
 		return self.userDao.get_user(user_name)
 
+	def check_user_order(self, order_id, user_name):
+		is_user_order = False
+		cursor = self.orderDao.select('message_id', order_by=None, order_id=order_id, user_name=user_name)
+		result = cursor.fetchone()
+		if result:
+			is_user_order = True
+		self.orderDao.free(cursor)
+		return is_user_order
+
 	def revoke(self, user_name, order_id, message_id):
 		money = self.orderDao.count_money_by_order_id(order_id)
+		self.orderDao.update({'type': '3'}, order_id=order_id)
+		self.orderDao.commit()
 		self.userDao.add_user_money(user_name, money)
 		self.orderDao.insert('', message_id, user_name, money, '', '退码', '', 0, 0, time.strftime("%F"))
 		self.orderDao.commit()

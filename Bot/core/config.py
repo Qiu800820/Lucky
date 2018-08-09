@@ -45,11 +45,9 @@ class Config:
 				self.token = config['token']
 				self.base_url = config['base_url']
 		except Exception as e:
-			if isinstance(e, ValueError):
-				pass
-			if isinstance(e, KeyError):
-				pass
+			print('配置文件格式错误，请检查config.txt')
 			raise e
+
 	def save_config(self):
 		path = os.path.join(self.resource_path, '../resource/config.txt')
 		with open(path, 'w', -1, 'utf-8') as f:

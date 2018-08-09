@@ -5,12 +5,11 @@ import re
 import threading
 import time
 
-# import itchat
+import itchat
 from itchat import msg_register
 from itchat.content import *
 
-
-from Bot.core import util, itchat
+from Bot.core import util
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
@@ -129,9 +128,13 @@ def add_friend(msg):
 def revoke(msg):
 	log.debug('revoke ->> msg:%s' % msg)
 	order_id = re.search(r'[0-9]+', msg['Content']).group()
-	validity, message = translate.revoke(order_id)
+	content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
+	validity = botDao.check_user_order(order_id, nick_name)
+	if validity:
+		validity, message = translate.revoke(order_id)
+	else:
+		message = '退码失败，编号错误'
 	if validity:  # 服务器退码成功
-		content, create_time, actual_nick_name, nick_name, msg_id = util.prepare_message_params(msg)
 		validity, message = botDao.revoke(nick_name, order_id, msg_id)
 	log.debug('revoke <<- message:%s' % message)
 	return message
@@ -325,8 +328,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	itchat.run(private_chat, group_chat, add_friend)  # mock 测试
-	# itchat.run()
+	# itchat.run(private_chat, group_chat, add_friend)  # mock 测试
+	itchat.run()
 
 
 

@@ -55,7 +55,8 @@ class Translate:
 		if response.status_code != 200 or len(result) == 0 or 'html' in result:
 			message = '译码错误'
 			validity = False
-			# todo 兼容关盘提示
+			if 'closeRace' in result:
+				message = '关盘中'
 		else:
 			for item in result.split(','):
 				item = item.split('=')
@@ -113,7 +114,7 @@ class Translate:
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
 		if response.status_code != 200:
-			message = response.text
+			message = '退码失败'
 		else:
 			message = '退码成功'
 			validity = True
