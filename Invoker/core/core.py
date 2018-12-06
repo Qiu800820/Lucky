@@ -2,8 +2,8 @@
 # -*- coding: UTF-8 -*-
 import time
 import math
-from core.fetch import Fetch
-from db.ssc_dao import AwardObject, TwoStarObject, Config, OmitLogObject
+from Invoker.core.fetch import Fetch
+from Invoker.db.ssc_dao import AwardObject, TwoStarObject, Config, OmitLogObject
 
 
 class Core:

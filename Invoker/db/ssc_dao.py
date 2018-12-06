@@ -3,7 +3,7 @@
 import json
 import os
 
-from db import sqlite_db
+from Invoker.db import sqlite_db
 
 
 class AwardObject(sqlite_db.Table):
@@ -31,7 +31,7 @@ class AwardObject(sqlite_db.Table):
 
 	# 获取本地最新开奖记录
 	def get_last_award(self):
-		cursor = self.select_all('*', order_by='id DESC')
+		cursor = self.select_all('*', order_by='period DESC')
 		last_award = cursor.fetchone()
 		while last_award:
 			if last_award[1]:  # 过滤空数据(未开奖)
@@ -44,8 +44,12 @@ class AwardObject(sqlite_db.Table):
 		return {'no': last_award[0], 'number': last_award[1], 'id': last_award[2]}
 
 	# 获取本地某期后的开奖记录
-	def get_new_award(self, no, order_by='asc'):
-		cursor = self.read('select * from award where period > ? order by period %s' % order_by, [no])
+	def get_new_award(self, no, end_no=None, order_by='asc'):
+		if end_no:
+			cursor = self.read('select * from award where period >= ? and period <= ? order by period %s' % order_by, [no, end_no])
+		else:
+			cursor = self.read('select * from award where period >= ? order by period %s' % order_by, [no])
+
 		award = cursor.fetchone()
 		while award:
 			yield {'no': award[0], 'number': award[1], 'id': award[2]}

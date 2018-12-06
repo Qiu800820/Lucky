@@ -15,7 +15,10 @@ class Fetch:
 
 	# 刷新历史开奖数据
 	# last_no ：本地最新开奖期
-	def refresh_answer(self, last_no):
+	def refresh_answer(self, last_no=None):
+		if not last_no:
+			last_award = self.award_db.get_last_award()
+			last_no = last_award and last_award['no']
 		day_list = time_difference(last_no)
 		for day in day_list:
 			data_list = self.__query_answer(day=day)
