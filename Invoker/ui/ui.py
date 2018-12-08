@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
+import re
 import traceback
 
 import sys
@@ -131,17 +132,25 @@ class UI(QtWidgets.QMainWindow, Ui_Lucky):
 
 	def mock_lucky(self):
 		# UI 缺少期数参数
-		strategy = self.get_strategy()
-		text = self.result_edit.toPlainText()
-		no_array = None
-		if text:
-			no_array = text.split(',')
-		if no_array:
-			result = self.core.mock_lucky(strategy['start_period'], no_array, strategy['mock_step'], strategy['mock_loop'])
-			self.textEdit.setText(result)
+		try:
+			strategy = self.get_strategy()
+			text = self.result_edit.toPlainText()
+			no_array = None
 
-		else:
-			self.show_toast('生成号码组为空， 不能模拟盈利数据')
+			if text:
+				match = re.findall(r'[0-9xX]{4,5}', text)
+				no_array = []
+				for item in match:
+					no_array.append((len(item) == 5 and item) or ('%sX' % item))
+
+			if no_array and len(no_array) > 0:
+				result = self.core.mock_lucky(strategy['start_period'], no_array, strategy['mock_step'], strategy['mock_loop'])
+				self.textEdit.setText(result)
+
+			else:
+				self.show_toast('生成号码组为空， 不能模拟盈利数据')
+		except Exception as e:
+			self.show_toast('号码格式有误, 请重新输入')
 
 	def lucky_lucky(self):
 		index = self.result_table.currentItem().row()
