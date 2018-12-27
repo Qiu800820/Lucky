@@ -3,6 +3,7 @@
 import csv
 import os
 import time
+import xlrd
 
 from Invoker.db.json2db import run
 from Invoker.db.ssc_dao import AwardObject
@@ -44,7 +45,8 @@ def output_csv(mock_data, file_name):
 			'期号', '万', '千', '百', '十', '个',
 			'万熟组', '千熟组', '百熟组', '十熟组', '个熟组',
 			'万生', '千生', '百生', '十生', '个生',
-			'万码组', '千码组', '百码组', '十码组', '个码组'
+			'万顺序', '千顺序', '百顺序', '十顺序', '个顺序',
+			'万码组', '千码组', '百码组', '十码组', '个码组',
 		])
 		for item in mock_data:
 			writer.writerow(update_familiar(familiar_map, count_map, item))
@@ -54,6 +56,7 @@ def update_familiar(familiar_map, count_map, item):
 	award = item['number'].replace(' ', '')
 	if award and len(award) == 5:
 		myriad, thousand, hundred, ten, one = (award[0], award[1], award[2], award[3], award[4])
+		myriad_index, thousand_index, hundred_index, ten_index, one_index = (0,0,0,0,0)
 		if_myriad, is_thousand, is_hundred, is_ten, is_one = (
 			is_unfamiliar(myriad, familiar_map.get('myriad')), is_unfamiliar(thousand, familiar_map.get('thousand')),
 			is_unfamiliar(hundred, familiar_map.get('hundred')), is_unfamiliar(ten, familiar_map.get('ten')),
@@ -61,43 +64,48 @@ def update_familiar(familiar_map, count_map, item):
 		)
 		for (key, value) in familiar_map.items():
 			if key == 'myriad':
-				sort_familiar(myriad, value)
+				myriad_index = sort_familiar(myriad, value)
 				count(myriad, count_map[key])
 			elif key == 'thousand':
-				sort_familiar(thousand, value)
+				thousand_index = sort_familiar(thousand, value)
 				count(thousand, count_map[key])
 			elif key == 'hundred':
-				sort_familiar(hundred, value)
+				hundred_index = sort_familiar(hundred, value)
 				count(hundred, count_map[key])
 			elif key == 'ten':
-				sort_familiar(ten, value)
+				ten_index = sort_familiar(ten, value)
 				count(ten, count_map[key])
 			elif key == 'one':
-				sort_familiar(one, value)
+				one_index = sort_familiar(one, value)
 				count(one, count_map[key])
 		return [
 			item['no'], myriad, thousand, hundred, ten, one, familiar_map.get('myriad'), familiar_map.get('thousand'),
 			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
-			if_myriad, is_thousand, is_hundred, is_ten, is_one, count_map.get('myriad'), count_map.get('thousand'),
-			count_map.get('hundred'), count_map.get('ten'), count_map.get('one')
+			if_myriad, is_thousand, is_hundred, is_ten, is_one,
+			myriad_index, thousand_index, hundred_index, ten_index, one_index,
+			count_map.get('myriad'), count_map.get('thousand'), count_map.get('hundred'), count_map.get('ten'), count_map.get('one')
 		]
 	else:
 		return [
 			item['no'], '', '', '', '', '', familiar_map.get('myriad'), familiar_map.get('thousand'),
-			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'), familiar_map.get('myriad'),
-			familiar_map.get('thousand'), familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
+			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
+			False, False, False, False, False,
+			0, 0, 0, 0, 0,
 			count_map.get('myriad'), count_map.get('thousand'), count_map.get('hundred'),
 			count_map.get('ten'), count_map.get('one')
 		]
 
 
 def sort_familiar(number, value):
+	index = 0
 	if number in value:
-		if value.index(number) != (len(value) - 1):
+		index = value.index(number)
+		if index != (len(value) - 1):
 			value.remove(number)
 			value.append(number)
 	else:
 		value.append(number)
+	return index
 
 
 def count(number, value):
@@ -109,7 +117,7 @@ def is_unfamiliar(number, value):
 	return len(value) > 0 and number == value[0]
 
 
-if __name__ == '__main__':
+def main_v1():
 	print('============= 时时彩助手v1 =============\n\n')
 
 	init_data()
@@ -125,3 +133,30 @@ if __name__ == '__main__':
 				complete = True
 		else:
 			print('输入格式有误')
+
+
+def main_v2():
+	mock_data = load_xls()
+	output_csv(mock_data, 'zund.csv')
+
+
+def load_xls():
+	workbook = xlrd.open_workbook('zund.xls')
+	for sheet in workbook.sheets():
+		last_day = ''
+		for i in range(sheet.nrows):
+			row = sheet.row_values(i)
+			if row[0]:
+				last_day = row[0]
+			if row[2]:
+				number = '%d%d%d%d%d' % (row[2], row[3], row[4], row[5], row[6])
+			else:
+				number = ''
+			yield {
+				'no': '%s%02d%02d' % (sheet.name, last_day, row[1]), 'number': number
+			}
+
+
+if __name__ == '__main__':
+	# main_v1()
+	main_v2()
