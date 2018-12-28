@@ -2,12 +2,12 @@
 # -*- coding: UTF-8 -*-
 import csv
 import os
-import time
+
 import xlrd
 
+from Invoker.core.fetch import Fetch
 from Invoker.db.json2db import run
 from Invoker.db.ssc_dao import AwardObject
-from Invoker.core.fetch import Fetch
 
 
 def init_data():
@@ -39,24 +39,26 @@ def output_csv(mock_data, file_name):
 	print('开始生成数据...')
 	familiar_map = {'myriad': [], 'thousand': [], 'hundred': [], 'ten': [], 'one': []}
 	count_map = {'myriad': {}, 'thousand': {}, 'hundred': {}, 'ten': {}, 'one': {}}
+	combo_map = {'myriad': [], 'thousand': [], 'hundred': [], 'ten': [], 'one': []}
 	with open(file_name, 'w+') as csv_file:
 		writer = csv.writer(csv_file)
 		writer.writerow([
 			'期号', '万', '千', '百', '十', '个',
 			'万熟组', '千熟组', '百熟组', '十熟组', '个熟组',
 			'万生', '千生', '百生', '十生', '个生',
+			'万031', '千031', '百031', '十031', '个031',
 			'万顺序', '千顺序', '百顺序', '十顺序', '个顺序',
-			'万码组', '千码组', '百码组', '十码组', '个码组',
+			'万码组', '千码组', '百码组', '十码组', '个码组'
 		])
 		for item in mock_data:
-			writer.writerow(update_familiar(familiar_map, count_map, item))
+			writer.writerow(update_familiar(familiar_map, count_map, item, combo_map))
 
 
-def update_familiar(familiar_map, count_map, item):
+def update_familiar(familiar_map, count_map, item, combo_map):
 	award = item['number'].replace(' ', '')
 	if award and len(award) == 5:
 		myriad, thousand, hundred, ten, one = (award[0], award[1], award[2], award[3], award[4])
-		myriad_index, thousand_index, hundred_index, ten_index, one_index = (0,0,0,0,0)
+		myriad_index, thousand_index, hundred_index, ten_index, one_index = (0, 0, 0, 0, 0)
 		if_myriad, is_thousand, is_hundred, is_ten, is_one = (
 			is_unfamiliar(myriad, familiar_map.get('myriad')), is_unfamiliar(thousand, familiar_map.get('thousand')),
 			is_unfamiliar(hundred, familiar_map.get('hundred')), is_unfamiliar(ten, familiar_map.get('ten')),
@@ -82,6 +84,9 @@ def update_familiar(familiar_map, count_map, item):
 			item['no'], myriad, thousand, hundred, ten, one, familiar_map.get('myriad'), familiar_map.get('thousand'),
 			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
 			if_myriad, is_thousand, is_hundred, is_ten, is_one,
+			is_combo(myriad, combo_map.get('myriad')), is_combo(thousand, combo_map.get('thousand')),
+			is_combo(hundred, combo_map.get('hundred')), is_combo(ten, combo_map.get('ten')),
+			is_combo(one, combo_map.get('one')),
 			myriad_index, thousand_index, hundred_index, ten_index, one_index,
 			count_map.get('myriad'), count_map.get('thousand'), count_map.get('hundred'), count_map.get('ten'), count_map.get('one')
 		]
@@ -89,6 +94,7 @@ def update_familiar(familiar_map, count_map, item):
 		return [
 			item['no'], '', '', '', '', '', familiar_map.get('myriad'), familiar_map.get('thousand'),
 			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
+			False, False, False, False, False,
 			False, False, False, False, False,
 			0, 0, 0, 0, 0,
 			count_map.get('myriad'), count_map.get('thousand'), count_map.get('hundred'),
@@ -115,6 +121,19 @@ def count(number, value):
 
 def is_unfamiliar(number, value):
 	return len(value) > 0 and number == value[0]
+
+
+def is_combo(number, combo_array):
+	if number == '0' and len(combo_array) == 0:
+		combo_array.append(number)
+	elif number == '3' and len(combo_array) == 1:
+		combo_array.append(number)
+	elif number == '1' and len(combo_array) == 2:
+		combo_array.clear()
+		return True
+	else:
+		combo_array.clear()
+	return False
 
 
 def main_v1():
@@ -158,5 +177,5 @@ def load_xls():
 
 
 if __name__ == '__main__':
-	# main_v1()
-	main_v2()
+	main_v1()
+	# main_v2()
