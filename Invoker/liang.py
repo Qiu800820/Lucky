@@ -96,7 +96,7 @@ def update_familiar(familiar_map, count_map, item, combo_map):
 			familiar_map.get('hundred'), familiar_map.get('ten'), familiar_map.get('one'),
 			False, False, False, False, False,
 			False, False, False, False, False,
-			0, 0, 0, 0, 0,
+			1, 1, 1, 1, 1,
 			count_map.get('myriad'), count_map.get('thousand'), count_map.get('hundred'),
 			count_map.get('ten'), count_map.get('one')
 		]
@@ -109,6 +109,7 @@ def sort_familiar(number, value):
 		if index != (len(value) - 1):
 			value.remove(number)
 			value.append(number)
+		index = (len(value) - index) % 10
 	else:
 		value.append(number)
 	return index

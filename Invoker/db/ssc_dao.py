@@ -4,6 +4,7 @@ import json
 import os
 
 from Invoker.db import sqlite_db
+from Invoker.core.const import Odds
 
 
 class AwardObject(sqlite_db.Table):
@@ -56,6 +57,51 @@ class AwardObject(sqlite_db.Table):
 			award = cursor.fetchone()
 		self.free(cursor)
 
+	def count_bingo(self, end_award_id, no_array_fun, start_award_id=0, max_bingo=99999):
+		if not no_array_fun:
+			return None
+		bingo_count, bingo_money, number_count = 0, 0, 0
+		cursor = self.read(
+			"select * from award where id >= ? and id < ?", [start_award_id, end_award_id]
+		)
+		item = cursor.fetchone()
+		last_award = None
+		while item:
+			award = item[1].replace(' ', '')
+			if not last_award:
+				last_award = award
+				item = cursor.fetchone()
+				continue
+			no_array = no_array_fun(last_award)
+			number_count += len(no_array)
+			last_award = award
+			count = 0
+			for no in no_array:
+				money = self.check_bingo(award, no)
+				if money > 0:
+					bingo_money += money
+					count += 1
+				if count >= max_bingo:  # 防止4星号码重复扫描
+					break
+			print('%s-%s-开奖号码:%s, 中奖%s组, 下单号码组:%s' % (item[2], item[0], award, count, no_array))
+			bingo_count += count
+			item = cursor.fetchone()
+		self.free(cursor)
+		return bingo_count, bingo_money, number_count
+
+	def check_bingo(self, award, no):
+		bingo_number_count = 0
+		for i in range(len(no)):
+			if no[i] == 'X':
+				continue
+			if no[i] != award[i]:
+				bingo_number_count = 0
+				break
+			else:
+				bingo_number_count += 1
+		money = Odds[bingo_number_count]
+		return money
+
 	def diff_no(self, last_no, current_no):
 		cursor = self.read("select count(*) as count from award where period > ? and period < ? and number <> ''",
 		                   [last_no, current_no])
@@ -65,6 +111,12 @@ class AwardObject(sqlite_db.Table):
 
 	def get_total(self):
 		cursor = self.read("select count(*) as count from award where number <> ''")
+		count = cursor.fetchone()
+		self.free(cursor)
+		return count[0]
+
+	def get_max(self):
+		cursor = self.read("select id from award where number <> '' order by id desc limit 1")
 		count = cursor.fetchone()
 		self.free(cursor)
 		return count[0]
