@@ -1,7 +1,4 @@
-
-def run():
-	login()
-	pass
+from Bet.core.core import run
 
 
 if __name__ == '__main__':
