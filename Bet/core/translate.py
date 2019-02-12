@@ -7,6 +7,9 @@ from Bot.core.encrypted import Encryption
 from Bot.core.util import display_simple_numbers, get_superior_site
 
 
+mock_post = True
+
+
 class Translate:
 
 	def __init__(self, config, log):
@@ -71,10 +74,10 @@ class Translate:
 				validity = False
 		return validity, number_array, message
 
-	def post_number(self, number_array):
+	def post_number(self, number_array, money):
 		info_array = []
 		for number in number_array:
-			info_array.append('%s|%s' % (number['number'], number['money']))
+			info_array.append('%s|%s' % (number, money))
 		info = ','.join(info_array)
 		url = "%s/make/order" % self.service
 		headers = {
@@ -87,6 +90,8 @@ class Translate:
 		message = ''
 		order_id = ''
 		validity = False
+		if mock_post:
+			return True, message, 'mock_order'
 		response = requests.post(url, data, headers=headers)
 		self.check_response(response)
 		if response.status_code != 200:
@@ -154,4 +159,24 @@ class Translate:
 			self.config.save_config()
 			print('警告：登陆过期，请重启程序！！！！')
 
+	def query_answer(self):
+		url = '%s/lot/ret' % self.service
+		headers = {
+			'Authorization': self.token
+		}
+		self.log.debug('--> url:%s, headers:%s' % (url, headers))
+		response = requests.post(url, headers=headers)
+		self.check_response(response)
+		if response.status_code != 200:
+			self.log.error(response.text)
+		else:
+			result = response.text
+			answer_array = result.split('@')
+			if len(answer_array) > 1:
+				current_no = answer_array[0].split('=')[1]
+				last_answer = answer_array[1].split('=')
+				if last_answer[2] and last_answer[2].strip():
+					last_number = '%s%s%s%s%s' % (last_answer[2], last_answer[3], last_answer[4], last_answer[5], last_answer[6])
+					last_no = last_answer[1]
+					return current_no, {"no": last_no, "number": last_number}
 

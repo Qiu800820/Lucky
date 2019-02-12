@@ -23,27 +23,23 @@ def run():
 	settle_no = '1'
 	no_array = []
 	while math.fabs(count_money) < config.max:
-		answer = get_answer()
-		if settle_no == answer.get('no'):
+		current_no, last_answer = translate.query_answer()
+		if settle_no == last_answer.get('no') and last_answer.get('number'):
 			money = 0
 			for number in no_array:
-				money = check_bingo(answer.get('number'), number)
+				money = check_bingo(last_answer.get('number'), number)
 				if money > 0:
 					break
 			count_money += money
-			log.info('=== %s期开奖结果%s, 本期盈利%s 总盈利%s===' % (answer.get('no'), answer.get('number'), money, count_money))
-		elif bet_no != answer.get('no'):
-			no_array = get_numbers(answer.get('number'))
-			log.info('=== %s期开奖结果%s, 本期打码%s ===' % (answer.get('no'), answer.get('number'), no_array))
+			log.info('=== %s期开奖结果%s, 本期盈利%s 总盈利%s===' % (last_answer.get('no'), last_answer.get('number'), money, count_money))
+		elif bet_no != current_no and last_answer.get('number'):
+			no_array = get_numbers(last_answer.get('number'))
+			log.info('=== %s期开奖结果%s, 本期打码%s ===' % (last_answer.get('no'), last_answer.get('number'), no_array))
 			if no_array and len(no_array) > 0:
-				info_array = []
-				for number in no_array:
-					info_array.append('%s|%s' % (number, config.bet))
-				info = ','.join(info_array)
-				validity, message, order_id = translate.post_number(info)
+				validity, message, order_id = translate.post_number(no_array, config.bet)
 				if validity and order_id:
-					bet_no = answer.get('no')
-					settle_no = next_no(bet_no)
+					bet_no = current_no
+					settle_no = current_no
 					log.info('=== %s期下单成功 ===' % settle_no)
 				else:
 					log.error('=== 下单失败, 失败原因:%s ===' % message)
@@ -65,8 +61,12 @@ def get_numbers(last_number):
 
 
 def get_answer():
-	item, history = fetch.query_answer()
-	return item or {'no': '0', 'number': ''}
+	current_no, last_answer = translate.query_answer()
+	if not current_no:
+		current_no = '0'
+	if not last_answer:
+		last_answer = {'no': '0', 'number': ''}
+	return current_no, last_answer
 
 
 def next_no(no):
