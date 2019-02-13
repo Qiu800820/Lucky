@@ -1,14 +1,11 @@
 #!/usr/bin/python
 # -*- coding: UTF-8 -*-
 import json
-import os
 
 
 class Config:
 
 	def __init__(self):
-		self.resource_path = os.path.dirname(__file__)
-		print('配置文件路径', self.resource_path)
 		self.bet = None
 		self.max = None
 		self.token = None
@@ -18,8 +15,7 @@ class Config:
 
 	def load_config(self):
 		# 读取配置
-		path = os.path.join(self.resource_path, '../resource/config.txt')
-		with open(path, 'r', -1, 'utf-8') as f:
+		with open('./resource/config.txt', 'r', -1, 'utf-8') as f:
 			config = f.read()
 			if config.startswith(u'\ufeff'):
 				config = config.encode('utf8')[3:].decode('utf8')
@@ -31,8 +27,7 @@ class Config:
 			self.position = config['position']
 
 	def save_config(self):
-		path = os.path.join(self.resource_path, '../resource/config.txt')
-		with open(path, 'w', -1, 'utf-8') as f:
+		with open('./resource/config.txt', 'w', -1, 'utf-8') as f:
 			config = {}
 			config.setdefault('bet', self.bet)
 			config.setdefault('max', self.max)

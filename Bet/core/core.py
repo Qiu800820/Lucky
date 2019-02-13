@@ -2,9 +2,9 @@ import math
 import time
 
 from Bet.core.config import Config
+from Bet.core.fetch import Fetch
 from Bet.core.log import Log
 from Bet.core.translate import Translate
-from Bet.core.fetch import Fetch
 
 log = Log()
 # 重要配置
@@ -23,13 +23,16 @@ def run():
 	settle_no = '1'
 	no_array = []
 	while math.fabs(count_money) < config.max:
-		current_no, last_answer = translate.query_answer()
+		current_no, last_answer = get_answer()
 		if settle_no == last_answer.get('no') and last_answer.get('number'):
+			settle_no = '1'
 			money = 0
 			for number in no_array:
 				money = check_bingo(last_answer.get('number'), number)
 				if money > 0:
 					break
+			principal = len(no_array) * config.bet
+			money -= principal
 			count_money += money
 			log.info('=== %s期开奖结果%s, 本期盈利%s 总盈利%s===' % (last_answer.get('no'), last_answer.get('number'), money, count_money))
 		elif bet_no != current_no and last_answer.get('number'):
@@ -44,7 +47,7 @@ def run():
 				else:
 					log.error('=== 下单失败, 失败原因:%s ===' % message)
 		else:
-			time.sleep(30)
+			time.sleep(60)
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
 
 

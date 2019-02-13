@@ -4,10 +4,9 @@ import requests
 from lxml import etree
 
 from Bot.core.encrypted import Encryption
-from Bot.core.util import display_simple_numbers, get_superior_site
+from Bot.core.util import get_superior_site
 
-
-mock_post = True
+mock_post = False
 
 
 class Translate:
@@ -100,9 +99,7 @@ class Translate:
 			validity = True
 			result = response.json()
 			order_id = result.get('order_id')
-			message = '(%s)共%s组, 编号%s' % (
-				display_simple_numbers(number_array), len(number_array), order_id
-			)
+			message = result.get('data')
 		return validity, message, order_id
 
 	def revoke(self, order_id):
@@ -179,4 +176,4 @@ class Translate:
 					last_number = '%s%s%s%s%s' % (last_answer[2], last_answer[3], last_answer[4], last_answer[5], last_answer[6])
 					last_no = last_answer[1]
 					return current_no, {"no": last_no, "number": last_number}
-
+		return None, None
