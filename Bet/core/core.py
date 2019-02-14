@@ -22,6 +22,16 @@ def run():
 	bet_no = '0'
 	settle_no = '1'
 	no_array = []
+	# todo 选择策略
+	get_numbers = None
+	while not get_numbers:
+		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n')
+		if no_id == '1':
+			get_numbers = get_numbers1
+		elif no_id == '2':
+			get_numbers = get_numbers2
+		else:
+			print('输入格式错误,请数据策略对应数字')
 	while math.fabs(count_money) < config.max:
 		current_no, last_answer = get_answer()
 		if settle_no == last_answer.get('no') and last_answer.get('number'):
@@ -51,13 +61,27 @@ def run():
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
 
 
-def get_numbers(last_number):
+def get_numbers1(last_number):
 	if not last_number:
 		return None
 	no_array = []
 	number = (int(last_number[0]) + int(last_number[3])) % 10
 	for i in range(1, 9):
 		for j in range(1, 9):
+			if number != ((i + j) % 10):
+				no_array.append(config.position % (i, j))
+	return no_array
+
+
+def get_numbers2(last_number):
+	if not last_number:
+		return None
+	no_array = []
+	number = (int(last_number[0]) + int(last_number[3])) % 10
+	numbers = [i for i in range(0, 9)]
+	numbers.remove(int(last_number[4]))  # 除第5球
+	for i in numbers:  # 除上期合码
+		for j in numbers:
 			if number != ((i + j) % 10):
 				no_array.append(config.position % (i, j))
 	return no_array
