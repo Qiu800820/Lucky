@@ -7,7 +7,8 @@ class Config:
 
 	def __init__(self):
 		self.bet = None
-		self.max = None
+		self.max_ying = None
+		self.max_shu = None
 		self.token = None
 		self.base_url = None
 		self.position = '%sXX%s'
@@ -20,7 +21,8 @@ class Config:
 			if config.startswith(u'\ufeff'):
 				config = config.encode('utf8')[3:].decode('utf8')
 			config = json.loads(config)
-			self.max = config['max']
+			self.max_ying = config['max_ying']
+			self.max_shu = config['max_shu']
 			self.bet = config['bet']
 			self.token = config['token']
 			self.base_url = config['base_url']
@@ -30,7 +32,8 @@ class Config:
 		with open('./resource/config.txt', 'w', -1, 'utf-8') as f:
 			config = {}
 			config.setdefault('bet', self.bet)
-			config.setdefault('max', self.max)
+			config.setdefault('max_ying', self.max_ying)
+			config.setdefault('max_shu', self.max_shu)
 			config.setdefault('token', self.token)
 			config.setdefault('position', self.position)
 			config.setdefault('base_url', self.base_url)

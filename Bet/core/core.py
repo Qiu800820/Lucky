@@ -1,4 +1,3 @@
-import math
 import time
 
 from Bet.core.config import Config
@@ -32,7 +31,7 @@ def run():
 			get_numbers = get_numbers2
 		else:
 			print('输入格式错误,请数据策略对应数字')
-	while math.fabs(count_money) < config.max:
+	while config.max_shu < count_money < config.max_ying:
 		current_no, last_answer = get_answer()
 		if settle_no == last_answer.get('no') and last_answer.get('number'):
 			settle_no = '1'
@@ -59,6 +58,7 @@ def run():
 		else:
 			time.sleep(60)
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
+	input('请按回车键退出程序!!!')
 
 
 def get_numbers1(last_number):
