@@ -11,6 +11,8 @@ class Config:
 		self.max_shu = None
 		self.token = None
 		self.base_url = None
+		self.last_no = None
+		self.last_order_id = None
 		self.position = '%sXX%s'
 		self.load_config()
 
@@ -23,6 +25,9 @@ class Config:
 			config = json.loads(config)
 			self.max_ying = config['max_ying']
 			self.max_shu = config['max_shu']
+			self.last_no = config['last_no']
+			self.last_order_id = config['last_order_id']
+			self.max_shu = config['max_shu']
 			self.bet = config['bet']
 			self.token = config['token']
 			self.base_url = config['base_url']
@@ -34,6 +39,8 @@ class Config:
 			config.setdefault('bet', self.bet)
 			config.setdefault('max_ying', self.max_ying)
 			config.setdefault('max_shu', self.max_shu)
+			config.setdefault('last_no', self.last_no)
+			config.setdefault('last_order_id', self.last_order_id)
 			config.setdefault('token', self.token)
 			config.setdefault('position', self.position)
 			config.setdefault('base_url', self.base_url)

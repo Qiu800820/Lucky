@@ -9,15 +9,29 @@ from Bot.core.util import get_superior_site
 mock_post = False
 
 
+class AuthError(Exception):
+
+	def __init__(self):
+		pass
+
+
 class Translate:
 
 	def __init__(self, config, log):
 		self.service = 'https://bc.exsba.com'
+		self.user_name = None
+		self.user_pwd = None
+		self.platform_name = None
+		self.platform_pwd = None
 		self.config = config
 		self.token = config.token
 		self.log = log
 		self.encryption = Encryption()
 		self.check_login()
+		self.fail_count = 0
+
+	def relogin(self):
+		return self.login(self.user_name, self.user_pwd, self.platform_name, self.platform_pwd)
 
 	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service
@@ -33,6 +47,7 @@ class Translate:
 		if response.status_code == 200:
 			self.token = response.json()['token']
 			self.config.token = self.token
+			self.user_name, self.user_pwd, self.platform_name, self.platform_pwd = py_user, py_psw, ssc_user, ssc_psw
 			message = '登陆成功'
 			login_status = True
 		else:
@@ -100,6 +115,8 @@ class Translate:
 			result = response.json()
 			order_id = result.get('order_id')
 			message = result.get('data')
+			if order_id:
+				self.fail_count = 0
 		return validity, message, order_id
 
 	def revoke(self, order_id):
@@ -151,10 +168,17 @@ class Translate:
 
 	def check_response(self, response):
 		self.log.debug(response.text)
-		if response.status_code == 401:
-			self.config.token = ""
-			self.config.save_config()
-			print('警告：登陆过期，请重启程序！！！！')
+		if response.text in 'MemberLogin.aspx' or response.status_code == 401:
+			self.raise_login()
+
+	def raise_login(self):
+		if self.fail_count > 5:
+			raise Exception('账号异常')
+		self.fail_count += 1
+		self.config.token = ""
+		self.config.save_config()
+		print('警告：登陆过期，正在重启程序！！！！')
+		raise AuthError()
 
 	def query_answer(self):
 		url = '%s/lot/ret' % self.service

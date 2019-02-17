@@ -3,7 +3,8 @@ import time
 from Bet.core.config import Config
 from Bet.core.fetch import Fetch
 from Bet.core.log import Log
-from Bet.core.translate import Translate
+from Bet.core.translate import Translate, AuthError
+import tkinter.messagebox
 
 log = Log()
 # 重要配置
@@ -18,10 +19,9 @@ Odds = [0, 9, 99, 999, 9990, 99900]
 
 def run():
 	count_money = 0
-	bet_no = '0'
+
 	settle_no = '1'
 	no_array = []
-	# todo 选择策略
 	get_numbers = None
 	while not get_numbers:
 		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n')
@@ -31,32 +31,43 @@ def run():
 			get_numbers = get_numbers2
 		else:
 			print('输入格式错误,请数据策略对应数字')
+	print('=== 正在监听最新开奖号码， 上次投注:%s期 ===' % config.last_no.get(no_id))
 	while config.max_shu < count_money < config.max_ying:
-		current_no, last_answer = get_answer()
-		if settle_no == last_answer.get('no') and last_answer.get('number'):
-			settle_no = '1'
-			money = 0
-			for number in no_array:
-				money = check_bingo(last_answer.get('number'), number)
-				if money > 0:
-					break
-			principal = len(no_array) * config.bet
-			money -= principal
-			count_money += money
-			log.info('=== %s期开奖结果%s, 本期盈利%s 总盈利%s===' % (last_answer.get('no'), last_answer.get('number'), money, count_money))
-		elif bet_no != current_no and last_answer.get('number'):
-			no_array = get_numbers(last_answer.get('number'))
-			log.info('=== %s期开奖结果%s, 本期打码%s ===' % (last_answer.get('no'), last_answer.get('number'), no_array))
-			if no_array and len(no_array) > 0:
-				validity, message, order_id = translate.post_number(no_array, config.bet)
-				if validity and order_id:
-					bet_no = current_no
-					settle_no = current_no
-					log.info('=== %s期下单成功 ===' % settle_no)
-				else:
-					log.error('=== 下单失败, 失败原因:%s ===' % message)
-		else:
-			time.sleep(60)
+		try:
+			raise Exception('test meesagebox')
+			current_no, last_answer = get_answer()
+			if settle_no == last_answer.get('no') and last_answer.get('number'):
+				settle_no = '1'
+				money = 0
+				for number in no_array:
+					money = check_bingo(last_answer.get('number'), number)
+					if money > 0:
+						break
+				principal = len(no_array) * config.bet
+				money -= principal
+				count_money += money
+				log.info('=== %s期开奖结果%s, 本期盈利%s 总盈利%s===' % (last_answer.get('no'), last_answer.get('number'), money, count_money))
+			elif config.last_no.get(no_id) != current_no and last_answer.get('number'):
+				no_array = get_numbers(last_answer.get('number'))
+				log.info('=== %s期开奖结果%s, 本期打码%s ===' % (last_answer.get('no'), last_answer.get('number'), no_array))
+				if no_array and len(no_array) > 0:
+					validity, message, order_id = translate.post_number(no_array, config.bet)
+					if validity and order_id:
+						config.last_no[no_id] = current_no
+						settle_no = current_no
+						config.save_config()
+						log.info('=== %s期下单成功 ===' % settle_no)
+					else:
+						log.error('=== 下单失败, 失败原因:%s ===' % message)
+						translate.raise_login()
+			else:
+				time.sleep(60)
+		except Exception as e:
+			if isinstance(e, AuthError):
+				translate.relogin()
+			else:
+				tkinter.messagebox.showwarning("自动下单助手", "警告 您的账户似乎出现了问题")
+
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
 	input('请按回车键退出程序!!!')
 
