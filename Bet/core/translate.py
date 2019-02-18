@@ -88,11 +88,7 @@ class Translate:
 				validity = False
 		return validity, number_array, message
 
-	def post_number(self, number_array, money):
-		info_array = []
-		for number in number_array:
-			info_array.append('%s|%s' % (number, money))
-		info = ','.join(info_array)
+	def post_number(self, info):
 		url = "%s/make/order" % self.service
 		headers = {
 			'Authorization': self.token
@@ -201,3 +197,18 @@ class Translate:
 					last_no = last_answer[1]
 					return current_no, {"no": last_no, "number": last_number}
 		return None, None
+
+	def get_my_money(self):
+		url = '%s/top/ret' % self.service
+		headers = {
+			'Authorization': self.token
+		}
+		self.log.debug('--> url:%s, headers:%s' % (url, headers))
+		response = requests.post(url, headers=headers)
+		self.check_response(response)
+		if response.status_code != 200:
+			self.log.error(response.text)
+		else:
+			return response.json()['data']
+
+		return None
