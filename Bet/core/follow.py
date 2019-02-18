@@ -49,7 +49,7 @@ class Follow:
 			"User": proxy_user, "Pwd": proxy_psw,
 		}
 		self.log.debug('--> url:%s, data:%s' % (url, data))
-		response = self.session.post(url, data=data)
+		response = self.session.post(url, data=data, timeout=20)
 		login_status = False
 		self.log.debug(response.text)
 		if response.status_code == 200 and 'ResellerTop.aspx' in response.text:

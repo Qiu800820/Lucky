@@ -168,12 +168,10 @@ class Translate:
 			self.raise_login()
 
 	def raise_login(self):
-		if self.fail_count > 5:
-			raise Exception('账号异常')
 		self.fail_count += 1
 		self.config.token = ""
 		self.config.save_config()
-		print('警告：登陆过期，正在重启程序！！！！')
+		self.log.error('警告：登陆过期，正在重启程序！！！！')
 		raise AuthError()
 
 	def query_answer(self):
@@ -196,6 +194,8 @@ class Translate:
 					last_number = '%s%s%s%s%s' % (last_answer[2], last_answer[3], last_answer[4], last_answer[5], last_answer[6])
 					last_no = last_answer[1]
 					return current_no, {"no": last_no, "number": last_number}
+				else:
+					return current_no, {"no": last_answer[1], "number": ''}
 		return None, None
 
 	def get_my_money(self):

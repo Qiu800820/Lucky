@@ -77,6 +77,8 @@ def run():
 						else:
 							log.error('=== 跟码失败, 失败原因:%s ===' % message)
 							translate.raise_login()
+					else:
+						log.info('=== 暂无新号码 ===')
 				time.sleep(spacing)
 
 			elif config.last_no.get(no_id) != current_no and last_answer.get('number'):
@@ -99,10 +101,8 @@ def run():
 			else:
 				time.sleep(spacing)
 		except Exception as e:
-			if isinstance(e, AuthError):
-				translate.relogin()
-			else:
-				tkinter.messagebox.showwarning("自动下单助手", "警告 您的账户似乎出现了问题")
+			log.error('程序发生未知错误,请联系开发人员进行调整', e)
+			translate.relogin()
 
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
 	input('请按回车键退出程序!!!')
