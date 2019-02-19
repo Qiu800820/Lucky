@@ -88,7 +88,7 @@ class Follow:
 			html_result = re.search(r"Succeeded@(?P<result>.*?)\$", response.text).group('result')
 			for order in html_result.split('#'):
 				items = order.split("|")
-				if int(items[0]) > int(last_order_id):
+				if len(items) > 1 and int(items[0]) > int(last_order_id):
 					result.append({
 						"order_id": items[0], "bet_number": items[6], "bet_money": items[9]
 					})
@@ -96,17 +96,17 @@ class Follow:
 
 
 if __name__ == '__main__':
-	last_order_id = '0'
+	_last_order_id = '0'
 	log = Log()
 	follow = Follow('http://pu.yy2bt.com', log)
 	while follow:
-		no_array = follow.follow("20190218035", last_order_id)
+		no_array = follow.follow("20190218035", _last_order_id)
 		if no_array and len(no_array) > 0:
 			info_array = []
 			for no in no_array:
 				info_array.append('%s|%s' % (no.get('bet_number'), no.get('bet_money')))
 			info = ','.join(info_array)
 			log.info('=== 跟码%s ===' % info)
-			last_order_id = no_array[0]['order_id']
+			_last_order_id = no_array[0]['order_id']
 		time.sleep(10)
 
