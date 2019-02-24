@@ -123,8 +123,7 @@ def inventory_v2():
 	money, statue = 0, False
 	try:
 		result = translate.get_my_money()
-		my_info = result.split('#')[1]
-		money = float(my_info.split('$')[5])
+		money = float(result.split('$')[5])
 		statue = True
 	except Exception as e:
 		pass
