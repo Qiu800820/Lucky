@@ -1,6 +1,9 @@
 import time
 import traceback
 
+from requests import RequestException
+from urllib3.exceptions import HTTPError
+
 from Bet.core.config import Config
 from Bet.core.fetch import Fetch
 from Bet.core.follow import Follow
@@ -106,7 +109,7 @@ def run():
 			else:
 				time.sleep(spacing)
 		except Exception as e:
-			if not isinstance(e, AuthError):
+			if not isinstance(e, AuthError) and not isinstance(e, RequestException) and not isinstance(e, HTTPError):
 				log.error('程序发生未知错误,请联系开发人员进行调整,错误详情:\n%s' % traceback.format_exc())
 			translate.relogin()
 
