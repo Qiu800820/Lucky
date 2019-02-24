@@ -11,6 +11,7 @@ class Config:
 		self.max_shu = None
 		self.token = None
 		self.base_url = None
+		self.follow_size = 1
 		self.last_no = None
 		self.last_order_id = None
 		self.agent_url = None
@@ -31,6 +32,7 @@ class Config:
 			self.last_order_id = config['last_order_id']
 			self.max_shu = config['max_shu']
 			self.bet = config['bet']
+			self.follow_size = config['follow_size']
 			self.token = config['token']
 			self.base_url = config['base_url']
 			self.position = config['position']
@@ -41,6 +43,7 @@ class Config:
 		with open('./resource/config.txt', 'w', -1, 'utf-8') as f:
 			config = {}
 			config.setdefault('bet', self.bet)
+			config.setdefault('follow_size', self.follow_size)
 			config.setdefault('max_ying', self.max_ying)
 			config.setdefault('max_shu', self.max_shu)
 			config.setdefault('last_no', self.last_no)

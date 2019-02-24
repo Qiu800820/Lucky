@@ -31,7 +31,13 @@ class Translate:
 		self.fail_count = 0
 
 	def relogin(self):
-		return self.login(self.user_name, self.user_pwd, self.platform_name, self.platform_pwd)
+		try:
+			message, login_status = self.login(self.user_name, self.user_pwd, self.platform_name, self.platform_pwd)
+		except Exception as e:
+			self.log('网络发生错误, 等待网络中...')
+			login_status = False
+			message = '网络发生错误'
+		return message, login_status
 
 	def login(self, py_user, py_psw, ssc_user, ssc_psw):
 		url = "%s/user/sign/in" % self.service

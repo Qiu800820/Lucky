@@ -1,5 +1,5 @@
 import time
-import tkinter.messagebox
+import traceback
 
 from Bet.core.config import Config
 from Bet.core.fetch import Fetch
@@ -50,6 +50,7 @@ def run():
 		try:
 			current_no, last_answer = get_answer()
 			if settle_no == last_answer.get('no') and last_answer.get('number'):
+				log.info('=== 第%s开奖结果已出，正在计算盈利结果 ===' % last_answer.get('no'))
 				status, money = inventory_v2()
 				if status:
 					settle_money = money - current_money
@@ -63,7 +64,8 @@ def run():
 					if no_array and len(no_array) > 0:
 						info_array = []
 						for no in no_array:
-							info_array.append('%s|%s' % (no.get('bet_number'), no.get('bet_money')))
+							bet_money = float(no.get('bet_money')) * config.follow_size
+							info_array.append('%s|%s' % (no.get('bet_number'), bet_money))
 						info = ','.join(info_array)
 						log.info('=== 跟码%s ===' % info)
 						if len(info_array) > 6000:
@@ -97,11 +99,15 @@ def run():
 						log.info('=== %s期下单成功 ===' % settle_no)
 					else:
 						log.error('=== 下单失败, 失败原因:%s ===' % message)
-						translate.raise_login()
+						if '关盘' in message:
+							config.last_no[no_id] = current_no
+						else:
+							translate.raise_login()
 			else:
 				time.sleep(spacing)
 		except Exception as e:
-			log.error('程序发生未知错误,请联系开发人员进行调整', e)
+			if not isinstance(e, AuthError):
+				log.error('程序发生未知错误,请联系开发人员进行调整,错误详情:\n%s' % traceback.format_exc())
 			translate.relogin()
 
 	print('=== 总盈利%s 超出止损止盈范围 ===' % count_money)
@@ -126,7 +132,7 @@ def inventory_v2():
 		money = float(result.split('$')[5])
 		statue = True
 	except Exception as e:
-		pass
+		log.error('获取本金失败, 失败原因:\n%s', traceback.format_exc())
 	return statue, money
 
 
@@ -148,7 +154,8 @@ def get_numbers2(last_number):
 	no_array = []
 	number = (int(last_number[0]) + int(last_number[3])) % 10
 	numbers = [i for i in range(0, 9)]
-	numbers.remove(int(last_number[4]))  # 除第5球
+	if int(last_number[4]) in numbers:
+		numbers.remove(int(last_number[4]))  # 除第5球
 	for i in numbers:  # 除上期合码
 		for j in numbers:
 			if number != ((i + j) % 10):
@@ -186,3 +193,4 @@ def check_bingo(award, no):
 			bingo_number_count += 1
 	money = Odds[bingo_number_count]
 	return money
+
