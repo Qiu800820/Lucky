@@ -68,6 +68,7 @@ def run():
 						info_array = []
 						for no in no_array:
 							bet_money = float(no.get('bet_money')) * config.follow_size
+							# todo 判断最小金额0.1/1
 							info_array.append('%s|%s' % (no.get('bet_number'), bet_money))
 						info = ','.join(info_array)
 						log.info('=== 跟码%s ===' % info)
