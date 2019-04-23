@@ -70,10 +70,19 @@ def run():
 						info_array = []
 						for no in no_array:
 							bet_money = float(no.get('bet_money')) * config.follow_size
-							# todo 判断最小金额0.1/1
+							if 'X' in no.get('bet_number'):
+								if bet_money < 0.2:
+									bet_money = 0.2
+								else:
+									bet_money = int(bet_money * 10) / 10
+							else:  # 4个号码
+								if bet_money < 1:
+									bet_money = 1
+								else:
+									bet_money = int(bet_money)
 							info_array.append('%s|%s' % (no.get('bet_number'), bet_money))
 						info = ','.join(info_array)
-						log.info('=== 跟码%s ===' % info)
+						log.info('=== %s期跟码%s ===' % (current_no, info))
 						if len(info_array) > 6000:
 							log.warning('=== 一次性打码超过6000组容易失败或者漏码，请注意检查 ===')
 						validity, message, order_id = translate.post_number(info)
@@ -81,9 +90,9 @@ def run():
 							config.last_order_id = no_array[0]['order_id']
 							settle_no = current_no
 							config.save_config()
-							log.info('=== 跟码成功 ===')
+							log.info('=== %s期跟码成功 ===' % current_no)
 						else:
-							log.error('=== 跟码失败, 失败原因:%s ===' % message)
+							log.error('=== %s期跟码失败, 失败原因:%s ===' % (current_no, message))
 							translate.raise_login()
 					else:
 						log.info('=== 暂无新号码 ===')

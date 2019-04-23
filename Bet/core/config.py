@@ -7,6 +7,7 @@ class Config:
 
 	def __init__(self):
 		self.bet = None
+		self.bet_service = None
 		self.max_ying = None
 		self.max_shu = None
 		self.token = None
@@ -27,6 +28,7 @@ class Config:
 				config = config.encode('utf8')[3:].decode('utf8')
 			config = json.loads(config)
 			self.max_ying = config['max_ying']
+			self.bet_service = config['bet_service']
 			self.max_shu = config['max_shu']
 			self.last_no = config['last_no']
 			self.last_order_id = config['last_order_id']
@@ -47,6 +49,7 @@ class Config:
 			config.setdefault('max_ying', self.max_ying)
 			config.setdefault('max_shu', self.max_shu)
 			config.setdefault('last_no', self.last_no)
+			config.setdefault('bet_service', self.bet_service)
 			config.setdefault('last_order_id', self.last_order_id)
 			config.setdefault('token', self.token)
 			config.setdefault('position', self.position)

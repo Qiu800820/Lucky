@@ -18,7 +18,7 @@ class AuthError(Exception):
 class Translate:
 
 	def __init__(self, config, log):
-		self.service = 'https://bc.exsba.com'
+		self.service = config.bet_service
 		self.user_name = None
 		self.user_pwd = None
 		self.platform_name = None
@@ -160,7 +160,7 @@ class Translate:
 		self.config.save_config()
 
 	def get_base_url(self):
-		response = requests.get(self.config.base_url)
+		response = requests.get(self.config.base_url, timeout=10)
 		if response.status_code != 200:
 			return self.config.base_url
 		else:
