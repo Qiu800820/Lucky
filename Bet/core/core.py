@@ -29,7 +29,7 @@ def run():
 	get_numbers = None
 	#  选择策略
 	while not get_numbers:
-		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n3：跟投')
+		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n3：跟投\n4：自定义策略')
 		if no_id == '1':
 			get_numbers = get_numbers1
 			print('=== 正在监听最新开奖号码， 上次投注:%s期 ===' % config.last_no.get(no_id))
@@ -41,6 +41,8 @@ def run():
 			follow = Follow(config.agent_url, log)
 			print('=== 上期跟投至:%s ===' % config.last_order_id)
 			get_numbers = get_numbers1
+		elif no_id == '4':
+			pass
 		else:
 			print('输入格式错误,请数据策略对应数字')
 	# 输出账户余额
