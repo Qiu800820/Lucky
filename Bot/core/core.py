@@ -5,12 +5,12 @@ import re
 import threading
 import time
 
-# import itchat
+import itchat
 from itchat import msg_register
 from itchat.content import *
 
 
-from Bot.core import util, itchat
+from Bot.core import util
 from Bot.core.config import Config
 from Bot.core.db.bot_dao import BotDao
 from Bot.core.fetch import Fetch
@@ -325,8 +325,8 @@ def run_threaded(delay_time, func):
 def run():
 	itchat.auto_login()
 	botDao.review(fetch)  # 对账
-	itchat.run(private_chat, group_chat, add_friend)  # mock 测试
-	# itchat.run()
+	# itchat.run(private_chat, group_chat, add_friend)  # mock 测试
+	itchat.run()
 
 
 
