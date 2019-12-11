@@ -29,7 +29,7 @@ def run():
 	get_numbers = None
 	#  选择策略
 	while not get_numbers:
-		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n3：跟投')
+		no_id = input('请选择打码策略：\n1：头尾1-8, 除上期头尾合分\n2：头尾除9, 除上期头尾合分, 除上期第5球\n3：跟投\n4：自定义策略')
 		if no_id == '1':
 			get_numbers = get_numbers1
 			print('=== 正在监听最新开奖号码， 上次投注:%s期 ===' % config.last_no.get(no_id))
@@ -41,6 +41,8 @@ def run():
 			follow = Follow(config.agent_url, log)
 			print('=== 上期跟投至:%s ===' % config.last_order_id)
 			get_numbers = get_numbers1
+		elif no_id == '4':
+			pass
 		else:
 			print('输入格式错误,请数据策略对应数字')
 	# 输出账户余额
@@ -68,10 +70,19 @@ def run():
 						info_array = []
 						for no in no_array:
 							bet_money = float(no.get('bet_money')) * config.follow_size
-							# todo 判断最小金额0.1/1
+							if 'X' in no.get('bet_number'):
+								if bet_money < 0.2:
+									bet_money = 0.2
+								else:
+									bet_money = int(bet_money * 10) / 10
+							else:  # 4个号码
+								if bet_money < 1:
+									bet_money = 1
+								else:
+									bet_money = int(bet_money)
 							info_array.append('%s|%s' % (no.get('bet_number'), bet_money))
 						info = ','.join(info_array)
-						log.info('=== 跟码%s ===' % info)
+						log.info('=== %s期跟码%s ===' % (current_no, info))
 						if len(info_array) > 6000:
 							log.warning('=== 一次性打码超过6000组容易失败或者漏码，请注意检查 ===')
 						validity, message, order_id = translate.post_number(info)
@@ -79,9 +90,9 @@ def run():
 							config.last_order_id = no_array[0]['order_id']
 							settle_no = current_no
 							config.save_config()
-							log.info('=== 跟码成功 ===')
+							log.info('=== %s期跟码成功 ===' % current_no)
 						else:
-							log.error('=== 跟码失败, 失败原因:%s ===' % message)
+							log.error('=== %s期跟码失败, 失败原因:%s ===' % (current_no, message))
 							translate.raise_login()
 					else:
 						log.info('=== 暂无新号码 ===')

@@ -85,7 +85,11 @@ class Encryption:
 		session = Session()
 		session.get('%s/Default.aspx' % site)
 		response = session.post(
-			'%s/MemberLogin.aspx?User=ss888&Pwd=%s&random=%s' % (site, pwd, random.random()),
+			'%s/MemberLogin.aspx?User=li888888&Pwd=%s&random=%s' % (site, pwd, random.random()),
 			headers=header
 		)
 		return response.text
+
+if __name__ == '__main__':
+	encryption = Encryption()
+	encryption.test()
